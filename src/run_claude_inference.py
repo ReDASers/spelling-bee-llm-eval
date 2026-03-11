@@ -3,9 +3,6 @@ NY Times Spelling Bee - Claude Model Inference Script
 ======================================================
 Runs Claude 4.5 haiku inference on all 58 puzzles with and without extended thinking.
 
-This script mirrors the structure of run_inference.py but uses Anthropic's Claude API
-instead of vLLM, allowing direct comparison between open-source and proprietary models.
-
 USAGE:
 ======
 1. Set your API key:

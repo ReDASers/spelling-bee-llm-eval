@@ -2,7 +2,6 @@
 NY Times Spelling Bee - OpenAI GPT Model Inference Script
 
 Runs GPT-5 reasoning model inference on all 58 puzzles with and without extended reasoning.
-Mirrors run_claude_inference.py structure for direct model comparison.
 
 USAGE:
     export OPENAI_API_KEY='your_api_key_here'

@@ -1,9 +1,6 @@
 # ============================================================================
 # NY Times Spelling Bee Word Prediction - Google Colab Version
 # ============================================================================
-# This script combines generator.py and run_ablation_experiment.py into a
-# single file optimized for Google Colab execution.
-#
 # Instructions:
 # 1. Run: !pip install -q vllm transformers tqdm jedi
 # 2. Mount Google Drive (will prompt for authorization)
