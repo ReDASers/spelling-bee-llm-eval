@@ -1,0 +1,12 @@
+# Inference dependencies (in addition to requirements.txt)
+
+# Qwen local inference (requires NVIDIA GPU with >=24GB VRAM for 32B model)
+vllm>=0.4
+transformers>=4.40
+torch>=2.2
+
+# Claude API inference
+anthropic>=0.25
+
+# OpenAI API inference
+openai>=1.30

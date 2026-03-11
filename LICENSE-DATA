@@ -1,0 +1,19 @@
+Data Notice and Disclaimer
+
+The puzzle data in data/puzzles/ originates from The New York Times Spelling
+Bee, a subscription-based word game published by The New York Times Company.
+This data was collected daily during the study period (June 2 -- July 29, 2025)
+and is redistributed here solely for non-commercial academic research and
+reproducibility of the results reported in:
+
+  Tuck, B. E. & Verma, R. M. (2026). "Orthographic Constraint Satisfaction
+  and Human Difficulty Alignment in Large Language Models." LREC-COLING 2026.
+
+The New York Times Company retains all rights to the original puzzle content.
+This dataset is provided under fair use (17 U.S.C. § 107) for purposes of
+scholarly research and commentary. It may not be used for commercial purposes
+or to replicate The New York Times Spelling Bee product.
+
+The model outputs in data/results/, data/claude-results/, and
+data/openai-results/ are original experimental results produced by the authors
+and are released under the MIT license (see LICENSE-CODE).
