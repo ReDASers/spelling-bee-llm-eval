@@ -1,6 +1,4 @@
-"""
-Core statistical functions and configuration-level aggregation.
-"""
+"""Core statistical functions and configuration-level aggregation."""
 
 from typing import Dict, Tuple
 
@@ -10,12 +8,7 @@ from scipy import stats
 
 
 def compute_confidence_interval(data: np.ndarray, confidence: float = 0.95) -> Tuple[float, float]:
-    """
-    Compute confidence interval using t-distribution.
-
-    Returns:
-        (lower_bound, upper_bound)
-    """
+    """Compute confidence interval using t-distribution."""
     if len(data) < 2:
         return (np.nan, np.nan)
 
@@ -26,15 +19,7 @@ def compute_confidence_interval(data: np.ndarray, confidence: float = 0.95) -> T
 
 
 def compute_cohens_d(group1: np.ndarray, group2: np.ndarray) -> float:
-    """
-    Compute Cohen's d effect size.
-
-    Args:
-        group1, group2: Two samples to compare
-
-    Returns:
-        Cohen's d effect size
-    """
+    """Compute Cohen's d effect size between two samples."""
     n1, n2 = len(group1), len(group2)
     var1, var2 = np.var(group1, ddof=1), np.var(group2, ddof=1)
     pooled_std = np.sqrt(((n1 - 1) * var1 + (n2 - 1) * var2) / (n1 + n2 - 2))
@@ -46,28 +31,15 @@ def compute_cohens_d(group1: np.ndarray, group2: np.ndarray) -> float:
 
 
 def compute_consistency_metrics(group: pd.DataFrame) -> Dict:
-    """
-    Compute consistency and reliability metrics for a configuration.
-
-    Args:
-        group: DataFrame subset for one configuration
-
-    Returns:
-        Dict with consistency metrics
-    """
+    """Compute CV, percentiles, and success-rate thresholds for a configuration."""
     f1_values = group['f1'].values
 
     metrics = {
-        # Coefficient of Variation (lower = more consistent)
         'cv_f1': np.std(f1_values, ddof=1) / np.mean(f1_values) if np.mean(f1_values) > 0 else np.nan,
-
-        # Percentiles (worst-case performance)
-        'f1_p5': np.percentile(f1_values, 5),   # Bottom 5%
-        'f1_p25': np.percentile(f1_values, 25), # Bottom quartile
-        'f1_p75': np.percentile(f1_values, 75), # Top quartile
-        'f1_p95': np.percentile(f1_values, 95), # Top 5%
-
-        # Success rates at thresholds
+        'f1_p5': np.percentile(f1_values, 5),
+        'f1_p25': np.percentile(f1_values, 25),
+        'f1_p75': np.percentile(f1_values, 75),
+        'f1_p95': np.percentile(f1_values, 95),
         'success_rate_20': np.sum(f1_values >= 0.2) / len(f1_values) if len(f1_values) > 0 else 0,
         'success_rate_30': np.sum(f1_values >= 0.3) / len(f1_values) if len(f1_values) > 0 else 0,
         'success_rate_40': np.sum(f1_values >= 0.4) / len(f1_values) if len(f1_values) > 0 else 0,
@@ -78,15 +50,9 @@ def compute_consistency_metrics(group: pd.DataFrame) -> Dict:
 
 
 def aggregate_by_configuration(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Aggregate metrics by model size, thinking mode, and thinking budget.
-
-    Returns:
-        DataFrame with mean, std, ci_lower, ci_upper for each metric, plus consistency metrics
-    """
+    """Aggregate metrics by (model_size, thinking, thinking_budget) with CIs and consistency."""
     results = []
 
-    # Group by model_size, thinking, and thinking_budget (if available)
     group_cols = ['model_size', 'thinking']
     if 'thinking_budget' in df.columns:
         group_cols.append('thinking_budget')
@@ -100,10 +66,9 @@ def aggregate_by_configuration(df: pd.DataFrame) -> pd.DataFrame:
             'avg_word_length_found', 'avg_word_length_missed',
             'pangram_recall',
             'fp_constraint_violations', 'fp_non_dictionary',
-            'num_predicted', 'num_actual', 'num_correct'  # Add volume metrics
+            'num_predicted', 'num_actual', 'num_correct'
         ]
 
-        # Handle both 2-tuple and 3-tuple group keys
         if len(group_cols) == 3:
             model_size, thinking, thinking_budget = group_keys
             row = {
@@ -141,11 +106,10 @@ def aggregate_by_configuration(df: pd.DataFrame) -> pd.DataFrame:
             row[f'{metric}_ci_lower'] = ci_lower
             row[f'{metric}_ci_upper'] = ci_upper
 
-        # Add consistency metrics
         consistency = compute_consistency_metrics(group)
         row.update(consistency)
 
-        # Add efficiency metric: recall per prediction (normalized by solution size)
+        # Efficiency: recall per prediction, normalized by solution size
         if 'num_predicted_mean' in row and 'num_actual_mean' in row and row['num_actual_mean'] > 0:
             predictions_per_actual = row['num_predicted_mean'] / row['num_actual_mean']
             if predictions_per_actual > 0:
@@ -159,7 +123,6 @@ def aggregate_by_configuration(df: pd.DataFrame) -> pd.DataFrame:
 
     agg_df = pd.DataFrame(results)
 
-    # Sort by model size (custom order), then budget, then thinking
     size_order = {'4b': 0, '8b': 1, '14b': 2, '32b': 3, '30b': 3, 'small': 4}
     agg_df['size_order'] = agg_df['model_size'].map(size_order)
 

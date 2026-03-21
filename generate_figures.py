@@ -1,10 +1,4 @@
-"""
-Generate figures for the LREC 2026 Spelling Bee paper.
-
-Usage:
-    python generate_figures.py
-    python generate_figures.py --metrics-dir metrics/output/ --output-dir figures/
-"""
+"""Generate publication figures for the LREC 2026 Spelling Bee paper."""
 
 import json
 import argparse
@@ -17,7 +11,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Publication style
 plt.rcParams.update({
     'font.family': 'serif',
     'font.serif': ['Times New Roman', 'DejaVu Serif', 'Liberation Serif'],
@@ -38,7 +31,7 @@ plt.rcParams.update({
 
 
 def _desaturate(hex_color: str, factor: float = 0.30) -> str:
-    """Desaturate a hex color by blending toward its luminance gray."""
+    """Blend a hex color toward its luminance gray."""
     r, g, b = int(hex_color[1:3], 16), int(hex_color[3:5], 16), int(hex_color[5:7], 16)
     gray = 0.299 * r + 0.587 * g + 0.114 * b
     r2 = int(max(0, min(255, r + factor * (gray - r))))
@@ -47,7 +40,7 @@ def _desaturate(hex_color: str, factor: float = 0.30) -> str:
     return f'#{r2:02x}{g2:02x}{b2:02x}'
 
 
-# Colorblind-friendly palette (Okabe-Ito, desaturated for print)
+# Okabe-Ito palette, desaturated for print
 _RAW_COLORS = {
     '4b': '#0173B2', '8b': '#DE8F05', '14b': '#029E73',
     '30b': '#CC78BC', '32b': '#CA0020',
@@ -60,7 +53,7 @@ COLORS.update({
     'thinking_on': COLORS['14b'], 'thinking_off': '#949494',
 })
 
-# Grayscale-safe markers, linestyles, and hatching
+# Grayscale-safe markers, linestyles, hatching
 MARKERS = {
     '4b': 'o', '8b': 's', '14b': '^', '30b': 'D', '32b': 'v',
     'claude-haiku': 'P', 'gpt5-mini': 'X',
@@ -108,7 +101,6 @@ def load_detailed_metrics(metrics_dir: str) -> pd.DataFrame:
 
 
 def _save_figure(output_dir: Path, name: str):
-    """Save current figure as PDF and PNG, then close."""
     plt.tight_layout()
     plt.savefig(output_dir / f'{name}.pdf', bbox_inches='tight')
     plt.savefig(output_dir / f'{name}.png', bbox_inches='tight')
@@ -120,7 +112,7 @@ def _sort_by_model_order(df: pd.DataFrame) -> pd.DataFrame:
     return df.sort_values('model_size', key=lambda x: x.map(order_map))
 
 
-# --- Figure 1: Model & Budget Scaling (Paper Figure 2) ----------------------
+# Figure 1: Model & Budget Scaling
 
 def plot_model_budget_scaling(agg_df: pd.DataFrame, output_dir: Path):
     """F1 scaling across model sizes for different thinking budgets."""
@@ -165,7 +157,7 @@ def plot_model_budget_scaling(agg_df: pd.DataFrame, output_dir: Path):
     print("  Fig 1: Model & Budget Scaling")
 
 
-# --- Figure 2: Reliability Box Plots ----------------------------------------
+# Figure 2: Reliability Box Plots
 
 def plot_reliability_analysis(agg_df: pd.DataFrame, detailed_df: pd.DataFrame, output_dir: Path):
     """F1 distribution box plots per model (8K budget or optimal)."""
@@ -225,7 +217,7 @@ def plot_reliability_analysis(agg_df: pd.DataFrame, detailed_df: pd.DataFrame, o
     print("  Fig 2: Reliability Box Plots")
 
 
-# --- Figure 3: Word Length vs Difficulty -------------------------------------
+# Figure 3: Word Length vs Difficulty
 
 def plot_word_length_difficulty(summary: Dict, output_dir: Path):
     """Mean word length for found vs missed words."""
@@ -259,7 +251,7 @@ def plot_word_length_difficulty(summary: Dict, output_dir: Path):
     print("  Fig 3: Word Length vs Difficulty")
 
 
-# --- Figure 4: Budget Effects (Paper Figure 3) ------------------------------
+# Figure 4: Budget Effects
 
 def plot_budget_effects(agg_df: pd.DataFrame, output_dir: Path):
     """F1 vs thinking budget for each model."""
@@ -295,7 +287,7 @@ def plot_budget_effects(agg_df: pd.DataFrame, output_dir: Path):
     print("  Fig 4: Budget Effects")
 
 
-# --- Figure 5: Length Coverage Heatmap (Paper Figure 5) ----------------------
+# Figure 5: Length Coverage Heatmap
 
 def plot_length_coverage_heatmap(agg_df: pd.DataFrame, metrics_dir: str, output_dir: Path):
     """Model recall heatmap by word length, with optional human comparison panel."""
@@ -324,7 +316,6 @@ def plot_length_coverage_heatmap(agg_df: pd.DataFrame, metrics_dir: str, output_
 
     data_matrix = np.array(data_matrix)
 
-    # Check for human difficulty data
     human_data_path = Path(metrics_dir) / 'human_difficulty_by_length.json'
     human_success_by_cat = None
     if human_data_path.exists():
@@ -388,7 +379,7 @@ def plot_length_coverage_heatmap(agg_df: pd.DataFrame, metrics_dir: str, output_
     print("  Fig 5: Length Coverage Heatmap")
 
 
-# --- Figure 6: Difficulty Stratification -------------------------------------
+# Figure 6: Difficulty Stratification
 
 def plot_difficulty_stratification(summary: Dict, output_dir: Path):
     """Recall on easy vs hard puzzles per model."""
@@ -402,7 +393,6 @@ def plot_difficulty_stratification(summary: Dict, output_dir: Path):
         print("  Fig 6: SKIPPED (no thinking-ON data)")
         return
 
-    # Select optimal budget per model
     configs = summary.get('configurations', [])
     optimal_budgets = {}
     for config in configs:
@@ -451,7 +441,7 @@ def plot_difficulty_stratification(summary: Dict, output_dir: Path):
     print("  Fig 6: Difficulty Stratification")
 
 
-# --- Figure 7: Model-Human Calibration (Paper Figure 4) ---------------------
+# Figure 7: Model-Human Calibration
 
 def plot_model_human_calibration(summary: Dict, output_dir: Path):
     """Two-panel: recall by human difficulty quartile + calibration correlation."""
@@ -463,7 +453,7 @@ def plot_model_human_calibration(summary: Dict, output_dir: Path):
     word_diff_data = summary.get('word_difficulty_stratification', [])
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
 
-    # Panel A: Recall by human difficulty quartile
+    # Panel A: recall by human difficulty quartile
     if word_diff_data:
         thinking_data = [d for d in word_diff_data if d.get('thinking') == True]
         quartiles = ['Very Easy (Q1)', 'Easy (Q2)', 'Hard (Q3)', 'Very Hard (Q4)']
@@ -508,15 +498,12 @@ def plot_model_human_calibration(summary: Dict, output_dir: Path):
         ax1.set_ylim(0, max([max(plot_data[q]) for q in quartiles]) * 1.15)
         ax1.text(-0.08, 1.05, '(a)', transform=ax1.transAxes, fontsize=13, fontweight='bold')
 
-    # Panel B: Calibration strength at F1-maximizing budget per model
-    # Find best thinking config per model (highest mean F1), then use its calibration
+    # Panel B: calibration strength (best thinking config per model)
     best_config = {}  # model -> (config_str, correlation)
     for config_str, metrics in calibration_data.items():
         if metrics.get('thinking'):
             model = metrics['model_size']
             corr = metrics.get('correlation', 0)
-            # Among thinking configs, pick the one with highest correlation
-            # (which aligns with best F1 config in practice)
             if model not in best_config or corr > best_config[model][1]:
                 best_config[model] = (config_str, corr)
 
@@ -548,7 +535,7 @@ def plot_model_human_calibration(summary: Dict, output_dir: Path):
     print("  Fig 7: Model-Human Calibration")
 
 
-# --- Figure 8: Generation Volume Analysis -----------------------------------
+# Figure 8: Generation Volume Analysis
 
 def plot_generation_volume(agg_df: pd.DataFrame, summary: Dict, output_dir: Path):
     """Generation volume by model/budget and volume-precision scatter."""
@@ -560,7 +547,7 @@ def plot_generation_volume(agg_df: pd.DataFrame, summary: Dict, output_dir: Path
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
 
-    # Left: volume by model and budget
+    # Left panel: volume by model and budget
     if 'thinking_budget' in thinking_on.columns and thinking_on['thinking_budget'].notna().any():
         budgets = sorted(thinking_on['thinking_budget'].dropna().unique())
         models = []
@@ -602,7 +589,7 @@ def plot_generation_volume(agg_df: pd.DataFrame, summary: Dict, output_dir: Path
     ax1.grid(axis='y', alpha=0.3, linestyle='--')
     ax1.text(-0.08, 1.05, '(a)', transform=ax1.transAxes, fontsize=13, fontweight='bold')
 
-    # Right: volume vs precision scatter
+    # Right panel: volume vs precision scatter
     by_model = summary.get('volume_performance_analysis', {}).get('by_model', {})
     if by_model:
         for model, stats_data in by_model.items():
@@ -628,8 +615,6 @@ def plot_generation_volume(agg_df: pd.DataFrame, summary: Dict, output_dir: Path
     _save_figure(output_dir, 'fig8_generation_volume')
     print("  Fig 8: Generation Volume")
 
-
-# --- Main --------------------------------------------------------------------
 
 def main():
     parser = argparse.ArgumentParser(description='Generate figures for LREC 2026 paper')

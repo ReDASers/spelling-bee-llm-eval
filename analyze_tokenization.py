@@ -1,10 +1,4 @@
-"""
-Tokenization analysis: Is word length degradation a character-length or token-count effect?
-
-Tests whether the Qwen tokenizer confounds the length-difficulty relationship
-reported in Section 5.4 by comparing character length vs token count as
-predictors of model success/failure.
-"""
+"""Test whether the Qwen tokenizer confounds the length-difficulty relationship (Section 5.4)."""
 
 import ast
 import json
@@ -24,7 +18,6 @@ def main():
     print("Loading detailed metrics...")
     df = pd.read_csv("metrics/output/detailed_metrics.csv")
 
-    # Collect all unique target words across all puzzles
     all_actual = set()
     all_found = set()
     all_missed = set()
@@ -40,7 +33,6 @@ def main():
     all_words = sorted(all_actual)
     print(f"Unique target words across all puzzles: {len(all_words)}")
 
-    # Tokenize all words
     word_tokens = {}
     for w in all_words:
         tokens = tok.encode(w, add_special_tokens=False)
@@ -49,7 +41,6 @@ def main():
     char_lengths = [len(w) for w in all_words]
     token_counts = [word_tokens[w] for w in all_words]
 
-    # --- Analysis 1: Token count distribution ---
     token_dist = defaultdict(int)
     for w in all_words:
         token_dist[word_tokens[w]] += 1
@@ -59,12 +50,10 @@ def main():
         pct = token_dist[tc] / len(all_words) * 100
         print(f"  {tc} token(s): {token_dist[tc]} words ({pct:.1f}%)")
 
-    # --- Analysis 2: Char length vs token count correlation ---
     r, p = stats.pearsonr(char_lengths, token_counts)
     print(f"\n=== Char Length vs Token Count ===")
     print(f"  Pearson r = {r:.3f}, p = {p:.2e}")
 
-    # By char length bucket
     print("\n=== Mean Token Count by Character Length ===")
     length_buckets = defaultdict(list)
     for w in all_words:
@@ -77,11 +66,8 @@ def main():
         print(f"  {length}-letter: n={len(tokens_list)}, mean tokens={mean_tok:.2f}, "
               f"single-token={single_pct:.1f}%")
 
-    # --- Analysis 3: Per-puzzle word-level success by token count vs char length ---
-    # For each (model, puzzle), compute recall stratified by token count AND char length
     print("\n=== Model Recall by Token Count vs Character Length ===")
 
-    # Aggregate across all configs: for each word occurrence, was it found or missed?
     word_outcomes = defaultdict(lambda: {"found": 0, "missed": 0})
 
     for _, row in df.iterrows():
@@ -92,7 +78,6 @@ def main():
         for w in missed:
             word_outcomes[w]["missed"] += 1
 
-    # Compute recall by char length and by token count
     recall_by_char = defaultdict(lambda: {"found": 0, "total": 0})
     recall_by_token = defaultdict(lambda: {"found": 0, "total": 0})
 
@@ -125,15 +110,13 @@ def main():
         tok_recalls.append(recall)
         tok_counts_list.append(tc)
 
-    # --- Analysis 4: Logistic-style comparison ---
-    # For each word occurrence, does char_length or token_count better predict success?
+    # Point-biserial: which length metric better predicts success?
     print("\n=== Point-Biserial Correlation: Success ~ Length Metric ===")
 
     successes, char_lens, tok_cnts = [], [], []
     for w, outcomes in word_outcomes.items():
         char_len = len(w)
         tok_count = word_tokens.get(w, 1)
-        # Each word contributes its found/missed counts
         successes.extend([1] * outcomes["found"] + [0] * outcomes["missed"])
         char_lens.extend([char_len] * (outcomes["found"] + outcomes["missed"]))
         tok_cnts.extend([tok_count] * (outcomes["found"] + outcomes["missed"]))
@@ -145,7 +128,7 @@ def main():
     print(f"  Success ~ token_count:  r = {r_tok:.4f}, p = {p_tok:.2e}")
     print(f"  Stronger predictor: {'character length' if abs(r_char) > abs(r_tok) else 'token count'}")
 
-    # --- Analysis 5: Qwen-only (isolate tokenizer effect) ---
+    # Qwen-only: isolate tokenizer effect (same tokenizer across all scales)
     print("\n=== Qwen-Only Analysis (Same Tokenizer Across Scales) ===")
     qwen_df = df[df["model_size"].isin(["4b", "8b", "14b", "30b", "32b"])]
 
@@ -172,7 +155,6 @@ def main():
     print(f"  Success ~ char_length:  r = {r_char_q:.4f}, p = {p_char_q:.2e}")
     print(f"  Success ~ token_count:  r = {r_tok_q:.4f}, p = {p_tok_q:.2e}")
 
-    # --- Summary ---
     results = {
         "unique_words": len(all_words),
         "single_token_pct": sum(1 for w in all_words if word_tokens[w] == 1) / len(all_words) * 100,

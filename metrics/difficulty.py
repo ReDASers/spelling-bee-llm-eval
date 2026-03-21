@@ -1,6 +1,4 @@
-"""
-Difficulty stratification, gap analysis, and word-level difficulty.
-"""
+"""Difficulty stratification, gap analysis, and word-level difficulty."""
 
 from typing import Dict
 
@@ -9,15 +7,9 @@ import pandas as pd
 
 
 def stratify_by_difficulty(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Aggregate metrics by puzzle difficulty level.
-
-    Returns:
-        DataFrame with metrics by difficulty (easy/medium/hard)
-    """
+    """Aggregate metrics by puzzle difficulty (easy/medium/hard)."""
     results = []
 
-    # Include thinking_budget in grouping if available
     group_cols = ['model_size', 'thinking']
     if 'thinking_budget' in df.columns:
         group_cols.append('thinking_budget')
@@ -27,7 +19,6 @@ def stratify_by_difficulty(df: pd.DataFrame) -> pd.DataFrame:
         if len(group) == 0:
             continue
 
-        # Unpack group keys based on number of grouping columns
         if len(group_cols) == 4:
             model_size, thinking, thinking_budget, difficulty = group_keys
             row = {
@@ -61,15 +52,9 @@ def stratify_by_difficulty(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def compute_difficulty_gap_analysis(difficulty_df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Compute the gap between easy and hard puzzle performance.
-
-    Returns:
-        DataFrame with difficulty gap metrics
-    """
+    """Compute recall gap between easy and hard puzzles per configuration."""
     results = []
 
-    # Include thinking_budget in grouping if available
     group_cols = ['model_size', 'thinking']
     if 'thinking_budget' in difficulty_df.columns:
         group_cols.append('thinking_budget')
@@ -107,23 +92,10 @@ def compute_difficulty_gap_analysis(difficulty_df: pd.DataFrame) -> pd.DataFrame
 
 
 def compute_word_level_difficulty_stratification(df: pd.DataFrame, difficulty_data: Dict[int, Dict[str, float]]) -> pd.DataFrame:
-    """
-    Stratify model performance by human word difficulty (NYT user success rates).
-
-    Groups words into difficulty quartiles based on human performance and computes
-    model recall for each quartile.
-
-    Args:
-        df: DataFrame with per-puzzle results
-        difficulty_data: Dict mapping puzzle_id -> {word: difficulty_score}
-
-    Returns:
-        DataFrame with recall by difficulty quartile for each model configuration
-    """
+    """Compute model recall by human difficulty quartile (Q1=very easy to Q4=very hard)."""
     if not difficulty_data:
         return pd.DataFrame()
 
-    # Collect all word-level data with human difficulty
     word_level_data = []
 
     for _, row in df.iterrows():
@@ -156,12 +128,10 @@ def compute_word_level_difficulty_stratification(df: pd.DataFrame, difficulty_da
 
     word_df = pd.DataFrame(word_level_data)
 
-    # Define difficulty quartiles based on human performance
     quartile_labels = ['Very Easy (Q1)', 'Easy (Q2)', 'Hard (Q3)', 'Very Hard (Q4)']
     word_df['difficulty_quartile'] = pd.qcut(word_df['human_difficulty'], q=4,
                                                labels=quartile_labels, duplicates='drop')
 
-    # Aggregate by configuration and quartile
     results = []
     group_cols = ['model_size', 'thinking']
     if 'thinking_budget' in word_df.columns and word_df['thinking_budget'].notna().any():

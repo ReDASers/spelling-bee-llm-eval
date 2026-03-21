@@ -1,23 +1,15 @@
-"""
-Thinking budget analysis: effects, model interaction, and optimal budget.
-"""
+"""Thinking budget analysis: effects, model interaction, and optimal budget."""
 
 import pandas as pd
 
 
 def compute_thinking_budget_effects(agg_df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Analyze how thinking budget affects performance for each model size.
-
-    Returns:
-        DataFrame with budget effects on performance metrics
-    """
+    """Compute incremental performance changes between adjacent budget levels."""
     if 'thinking_budget' not in agg_df.columns:
         return pd.DataFrame()
 
     results = []
 
-    # Only analyze thinking=True rows
     thinking_df = agg_df[agg_df['thinking'] == True].copy()
 
     for model_size in thinking_df['model_size'].unique():
@@ -39,7 +31,6 @@ def compute_thinking_budget_effects(agg_df: pd.DataFrame) -> pd.DataFrame:
             delta_recall = next_budget['recall_mean'] - curr['recall_mean']
             delta_precision = next_budget['precision_mean'] - curr['precision_mean']
 
-            # Efficiency: performance gain per 1K tokens
             efficiency_f1 = (delta_f1 / budget_increase) * 1000
             efficiency_recall = (delta_recall / budget_increase) * 1000
 
@@ -60,12 +51,7 @@ def compute_thinking_budget_effects(agg_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def compute_budget_model_interaction(agg_df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Analyze whether smaller/larger models benefit differently from budget increases.
-
-    Returns:
-        DataFrame showing budget sensitivity by model size
-    """
+    """Compare budget sensitivity across model sizes (total improvement over budget range)."""
     if 'thinking_budget' not in agg_df.columns:
         return pd.DataFrame()
 
@@ -80,7 +66,6 @@ def compute_budget_model_interaction(agg_df: pd.DataFrame) -> pd.DataFrame:
         if len(model_data) < 2:
             continue
 
-        # Compute total improvement from lowest to highest budget
         min_budget_row = model_data.iloc[0]
         max_budget_row = model_data.iloc[-1]
 
@@ -88,7 +73,6 @@ def compute_budget_model_interaction(agg_df: pd.DataFrame) -> pd.DataFrame:
         f1_improvement = max_budget_row['f1_mean'] - min_budget_row['f1_mean']
         recall_improvement = max_budget_row['recall_mean'] - min_budget_row['recall_mean']
 
-        # Budget sensitivity: how much does this model benefit from budget increases?
         results.append({
             'model_size': model_size,
             'min_budget': int(min_budget_row['thinking_budget']),
@@ -106,12 +90,7 @@ def compute_budget_model_interaction(agg_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def compute_optimal_budget_analysis(agg_df: pd.DataFrame) -> dict:
-    """
-    Determine optimal thinking budget for each model size based on performance.
-
-    Returns:
-        Dict with optimal budget recommendations
-    """
+    """Find the thinking budget that maximizes F1 for each model size."""
     if 'thinking_budget' not in agg_df.columns:
         return {'error': 'No thinking budget data'}
 
@@ -125,7 +104,6 @@ def compute_optimal_budget_analysis(agg_df: pd.DataFrame) -> dict:
         if len(model_data) == 0:
             continue
 
-        # Find budget with highest F1
         best_row = model_data.loc[model_data['f1_mean'].idxmax()]
 
         recommendations[model_size] = {

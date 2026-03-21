@@ -1,17 +1,6 @@
-# ============================================================================
-# NY Times Spelling Bee Word Prediction - Google Colab Version
-# ============================================================================
-# Instructions:
-# 1. Run: !pip install -q vllm transformers tqdm jedi
-# 2. Mount Google Drive (will prompt for authorization)
-# 3. Ensure Bee-Daily-Pull/ folder exists in MyDrive
-# 4. Edit the USER CONFIGURATION section below (set RUN_MODE)
-# 5. Run this entire cell
-# 
-# Results will be saved to:
-# - /content/drive/MyDrive/spelling-bee-results/
-# - /content/drive/MyDrive/spelling-bee-logs/
-# ============================================================================
+# Qwen3 Spelling Bee inference via vLLM on Google Colab.
+# Requires: !pip install -q vllm transformers tqdm jedi
+# Mount Google Drive, set RUN_MODE below, then run.
 
 # !pip install -q vllm transformers tqdm jedi
 
@@ -35,9 +24,7 @@ try:
 except FileNotFoundError:
     print("WARNING: nvidia-smi not found, GPU may not be available")
 
-# ============================================================================
-# IMPORTS
-# ============================================================================
+# --- Imports ---
 
 import json
 import re
@@ -53,9 +40,7 @@ from datetime import datetime, timedelta
 
 random.seed(42)
 
-# ============================================================================
-# USER CONFIGURATION - EDIT THIS SECTION
-# ============================================================================
+# --- User Configuration ---
 
 RUN_MODE = "ablation"  # "single" for one prediction, "ablation" for full experiment
 
@@ -84,19 +69,16 @@ ABLATION_CONFIG = {
     'thinking_budget': 12288
 }
 
-# Paths (Google Drive mounted for Colab; adjust for local use)
+# Paths (adjust for local use)
 BEE_DATA_PATH = "/content/drive/MyDrive/Bee-Daily-Pull/"
 RESULTS_PATH = "/content/drive/MyDrive/spelling-bee-results/"
 LOG_PATH = "/content/drive/MyDrive/spelling-bee-logs/"
 
-# ============================================================================
-# CONSTANTS
-# ============================================================================
+# --- Constants ---
 
 MODEL_NAME = SINGLE_CONFIG['model'] if RUN_MODE == "single" else ABLATION_CONFIG['models_to_test'][0]
 
-# Qwen3 recommended sampling parameters
-# See: https://qwen.readthedocs.io/ for best practices
+# Qwen3 recommended sampling (https://qwen.readthedocs.io/)
 SAMPLING_PARAMS_THINKING = {
     'max_tokens': 16384,
     'temperature': 0.6,
@@ -128,12 +110,9 @@ EARLY_STOP_PROMPT = "\n\nConsidering the limited time by the user, I have to giv
 MIN_WORD_LENGTH = 4
 TOTAL_ALPHABET_SIZE = 7
 
-# ============================================================================
-# LOGGING SETUP
-# ============================================================================
+# --- Logging ---
 
 def log_separator(logger, title=None, char="-", width=60):
-    """Compact separator for cleaner logs"""
     if title:
         logger.info(f"\n{char*width}")
         logger.info(f" {title}")
@@ -143,15 +122,7 @@ def log_separator(logger, title=None, char="-", width=60):
 
 
 def setup_logging(model_name=None, thinking_mode=None, date_range=None):
-    """
-    Setup logging with unique files per configuration.
-    Creates separate logs for main execution and thinking traces.
-    
-    Args:
-        model_name: Model identifier (e.g., "Qwen/Qwen3-4B")
-        thinking_mode: Boolean for thinking on/off
-        date_range: Tuple of (start_date, end_date) strings like ("20250602", "20250729")
-    """
+    """Create per-configuration log files for main execution and thinking traces."""
     os.makedirs(LOG_PATH, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     
@@ -172,8 +143,8 @@ def setup_logging(model_name=None, thinking_mode=None, date_range=None):
     
     logger = logging.getLogger('bee_predictor')
     logger.setLevel(logging.INFO)
-    logger.handlers = []  # Clear existing handlers to prevent duplicates
-    logger.propagate = False  # Prevent propagation to root logger
+    logger.handlers = []
+    logger.propagate = False
     
     file_handler = logging.FileHandler(log_file, encoding='utf-8')
     file_handler.setLevel(logging.DEBUG)
@@ -197,12 +168,9 @@ def setup_logging(model_name=None, thinking_mode=None, date_range=None):
 
 logger = setup_logging()
 
-# ============================================================================
-# THINKING TRACE LOGGING
-# ============================================================================
+# --- Thinking Trace Logging ---
 
 def save_thinking_trace(puzzle_id, date, thinking_content, logger):
-    """Save thinking trace to separate log file for later analysis"""
     if not hasattr(logger, 'thinking_log_file'):
         return
     
@@ -218,9 +186,7 @@ def save_thinking_trace(puzzle_id, date, thinking_content, logger):
         logger.debug(f"Failed to save thinking trace: {e}")
 
 
-# ============================================================================
-# DATA LOADING
-# ============================================================================
+# --- Data Loading ---
 
 def load_bee_data(filename):
     with open(filename, 'r') as f:
@@ -257,9 +223,7 @@ def load_historical_data(start_date, end_date):
     logger.info(f"Successfully loaded {len(historical_data)} historical puzzle(s)")
     return historical_data
 
-# ============================================================================
-# PUZZLE ANALYSIS
-# ============================================================================
+# --- Puzzle Analysis ---
 
 def extract_puzzle_letters(words):
     if not words:
@@ -289,9 +253,7 @@ def identify_center_letter(words):
     
     return None
 
-# ============================================================================
-# WORD VALIDATION AND DIFFICULTY METRICS
-# ============================================================================
+# --- Word Validation and Difficulty Metrics ---
 
 def is_valid_bee_word(word, center_letter, allowed_letters):
     word = word.strip().lower()
@@ -303,10 +265,7 @@ def is_valid_bee_word(word, center_letter, allowed_letters):
 
 
 def calculate_word_difficulty_metrics(word, all_letters):
-    """
-    Calculate word difficulty proxies based on letter frequency.
-    Frequencies from Cornell Math: https://pi.math.cornell.edu/~mec/2003-2004/cryptography/subs/frequencies.html
-    """
+    """Difficulty proxies from English letter frequencies (Cornell Math)."""
     word = word.lower()
 
     LETTER_FREQ = {
@@ -317,18 +276,16 @@ def calculate_word_difficulty_metrics(word, all_letters):
         'v': 1.11, 'k': 0.69, 'x': 0.17, 'q': 0.11, 'j': 0.10, 'z': 0.07
     }
     
-    # Letter scarcity score: lower frequency letters = higher difficulty
+    # Lower frequency letters = higher difficulty
     scarcity_scores = [1.0 / (LETTER_FREQ.get(c, 0.01) + 0.01) for c in word]
     avg_scarcity = sum(scarcity_scores) / len(word) if word else 0
     
-    # Positional diversity: more unique letter-position patterns = harder
     letter_positions = defaultdict(list)
     for idx, char in enumerate(word):
         letter_positions[char].append(idx)
     
     positional_diversity = len(letter_positions) / len(word) if word else 0
-    
-    # Letter utilization: fraction of the 7 available letters used
+
     letters_used = len(set(word))
     utilization_ratio = letters_used / len(all_letters) if all_letters else 0
     
@@ -341,9 +298,7 @@ def calculate_word_difficulty_metrics(word, all_letters):
         'is_pangram': set(word) == set(all_letters)
     }
 
-# ============================================================================
-# HELPER FUNCTIONS
-# ============================================================================
+# --- Helpers ---
 
 def get_sampling_params(enable_thinking=True):
     params = SAMPLING_PARAMS_THINKING if enable_thinking else SAMPLING_PARAMS_NON_THINKING
@@ -367,9 +322,7 @@ def detect_qwen3_model(model_name):
         'supports_thinking': False
     }
 
-# ============================================================================
-# PROMPT CREATION
-# ============================================================================
+# --- Prompt Creation ---
 
 def create_word_prediction_prompt(center_letter, outer_letters, num_words, historical_examples=None):
     all_letters = sorted([center_letter] + outer_letters)
@@ -492,17 +445,11 @@ def parse_word_predictions(generated_text, center_letter, allowed_letters, targe
     logger.debug(f"Valid words: {', '.join(valid_words[:10])}{'...' if len(valid_words) > 10 else ''}")
     return valid_words[:target_count]
 
-# ============================================================================
-# TEXT GENERATION
-# ============================================================================
+# --- Text Generation ---
 
 def _generate_with_thinking_budget(llm, tokenizer, formatted_prompt, sampling_params, thinking_budget):
-    """
-    Implements thinking budget for vLLM by generating in stages:
-    1. Generate up to thinking_budget tokens
-    2. Check if thinking completed (</think> found)
-    3. If not, inject early-stop prompt and continue with remaining budget
-    """
+    """Two-stage generation: produce up to thinking_budget tokens, then inject
+    an early-stop prompt if </think> wasn't reached."""
     logger.info(f"Using thinking budget: {thinking_budget} tokens")
     budget_sampling_params = SamplingParams(
         max_tokens=thinking_budget,
@@ -645,13 +592,11 @@ def _generate_with_thinking_budget(llm, tokenizer, formatted_prompt, sampling_pa
     stage2_full_text = output_stage2.outputs[0].text
     stage2_token_ids = output_stage2.outputs[0].token_ids
 
-    # Extract only the new generation after the early stop prompt
     expected_prefix_text = stage1_text + EARLY_STOP_PROMPT
     if stage2_full_text.startswith(expected_prefix_text):
         stage2_new_text = stage2_full_text[len(expected_prefix_text):]
         logger.debug(f"Extracted {len(stage2_new_text)} chars of new stage2 text")
     else:
-        # Fallback: try to find where the new content starts
         logger.warning("Could not match expected prefix in stage2 output, using full output")
         stage2_new_text = stage2_full_text
     
@@ -709,7 +654,6 @@ def _generate_with_thinking_budget(llm, tokenizer, formatted_prompt, sampling_pa
         logger.warning("Could not find </think> tag even after early-stop injection")
         logger.warning("Model may not have responded to early-stop prompt correctly")
     
-    # Fallback: return whatever we got
     throughput_stats['thinking_tokens'] = len(stage1_token_ids)
     throughput_stats['answer_tokens'] = len(stage2_token_ids)
     
@@ -869,12 +813,9 @@ def predict_words_for_puzzle(center_letter, outer_letters, llm, tokenizer, num_w
     logger.info(f"\nSuccessfully predicted {len(predicted_words)} words")
     return predicted_words, throughput_stats
 
-# ============================================================================
-# EVALUATION
-# ============================================================================
+# --- Evaluation ---
 
 def analyze_constraint_violations(predicted_words, center_letter, allowed_letters):
-    """Analyze constraint violations for error taxonomy"""
     violations = {
         'missing_center': [],
         'forbidden_letters': [],
@@ -904,7 +845,6 @@ def analyze_constraint_violations(predicted_words, center_letter, allowed_letter
 
 
 def categorize_errors(predicted_words, actual_words, center_letter, allowed_letters):
-    """Detailed error categorization for LREC paper analysis"""
     errors = {
         'constraint_violations': {},
         'non_dictionary_words': [],
@@ -936,10 +876,7 @@ def categorize_errors(predicted_words, actual_words, center_letter, allowed_lett
 
 
 def calculate_metrics(predicted_words, actual_words, center_letter=None, allowed_letters=None, tokens_generated=None):
-    """
-    Calculate comprehensive metrics for LREC paper.
-    Includes standard IR metrics + constraint adherence + token efficiency.
-    """
+    """IR metrics, constraint adherence rate, and token efficiency."""
     true_positives = len(actual_words & predicted_words)
     false_positives = len(predicted_words - actual_words)
     false_negatives = len(actual_words - predicted_words)
@@ -1035,9 +972,7 @@ def print_summary(predictions):
     log_separator(logger)
     logger.info("")
 
-# ============================================================================
-# MAIN PROCESSING
-# ============================================================================
+# --- Main Processing ---
 
 def create_run_metadata(model_name, model_metadata, vllm_config, historical_days, enable_thinking=None):
     if enable_thinking is None:
@@ -1075,7 +1010,6 @@ def create_run_metadata(model_name, model_metadata, vllm_config, historical_days
 
 
 def _compute_summary_stats(all_predictions):
-    """Compute aggregate summary statistics for a set of predictions"""
     if not all_predictions:
         return {}
     
@@ -1101,7 +1035,6 @@ def _compute_summary_stats(all_predictions):
 
 
 def _build_results_filename(model_metadata, all_predictions):
-    """Build descriptive filename based on model config and date range."""
     model_name = model_metadata.get('name', '')
     if "Qwen3" in model_name or "qwen3" in model_name.lower():
         model_family = "qwen3"
@@ -1277,7 +1210,7 @@ def load_model(model_name, tensor_parallel_size=1, gpu_memory_utilization=0.9, m
         "model": model_name,
         "tensor_parallel_size": tensor_parallel_size,
         "gpu_memory_utilization": gpu_memory_utilization,
-        # Required for Qwen3 custom tokenizer code; pin model revisions to mitigate supply-chain risk
+        # Qwen3 custom tokenizer requires trust_remote_code
         "trust_remote_code": True,
         "dtype": "auto",
     }
@@ -1380,19 +1313,10 @@ def run_prediction(model_name, prediction_dates, historical_days=2, tensor_paral
 
     return predictions
 
-# ============================================================================
-# ABLATION EXPERIMENT
-# ============================================================================
+# --- Ablation Experiment ---
 
 def run_ablation_experiment():
-    """
-    LREC Paper Experiments:
-    - Test 4 model sizes (4B, 8B, 14B, 32B)
-    - Test thinking ON/OFF for ALL models
-    - Test all 58 puzzles (June 2 - July 29, 2025)
-    - Zero-shot only (no historical context)
-    - Total: 8 configurations x 58 puzzles = 464 experiments
-    """
+    """4 Qwen3 sizes x 2 thinking modes x 58 puzzles, zero-shot."""
     global logger
     
     logger.info("\n")
@@ -1551,7 +1475,6 @@ def run_ablation_experiment():
 
 
 def print_ablation_summary(results):
-    """Print summary table for LREC ablation results"""
     if not results:
         logger.warning("No results to summarize")
         return
@@ -1610,9 +1533,7 @@ def print_ablation_summary(results):
     logger.info("\n" + "="*90)
     logger.info("")
 
-# ============================================================================
-# MAIN EXECUTION
-# ============================================================================
+# --- Main ---
 
 if __name__ == "__main__":
     print(f"Spelling Bee inference (mode={RUN_MODE})")

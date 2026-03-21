@@ -1,7 +1,4 @@
-"""
-Statistical significance tests, thinking effects, scaling patterns,
-word length stratification/correlation, and volume analysis.
-"""
+"""Statistical tests, scaling analysis, word length stratification, and volume analysis."""
 
 from collections import defaultdict
 from typing import Dict
@@ -16,13 +13,7 @@ from metrics.basic import categorize_word_length
 
 
 def compute_statistical_significance(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Compute statistical significance for thinking mode comparisons.
-    Uses paired t-tests and Cohen's d effect sizes.
-
-    Returns:
-        DataFrame with t-statistic, p-value, Cohen's d for each model size
-    """
+    """Paired t-tests and Cohen's d for thinking on vs. off, per model size."""
     results = []
 
     for model_size in MODEL_SIZES:
@@ -32,7 +23,6 @@ def compute_statistical_significance(df: pd.DataFrame) -> pd.DataFrame:
         if len(thinking_on) == 0 or len(thinking_off) == 0:
             continue
 
-        # Ensure same puzzles for paired test
         if len(thinking_on) != len(thinking_off):
             print(f"Warning: Unequal samples for {model_size}, skipping paired test")
             continue
@@ -43,10 +33,7 @@ def compute_statistical_significance(df: pd.DataFrame) -> pd.DataFrame:
             on_values = thinking_on[metric].values
             off_values = thinking_off[metric].values
 
-            # Paired t-test
             t_stat, p_value = stats.ttest_rel(on_values, off_values)
-
-            # Cohen's d
             cohens_d = compute_cohens_d(on_values, off_values)
 
             row[f'{metric}_t_stat'] = t_stat
@@ -60,17 +47,10 @@ def compute_statistical_significance(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def compute_thinking_consistency_effects(agg_df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Compute how thinking mode affects consistency metrics.
-
-    Returns:
-        DataFrame with thinking mode effects on consistency
-    """
+    """Compute thinking mode effects on consistency (delta CV, worst-5%, success rate)."""
     results = []
 
-    # Include thinking_budget in grouping if available
     if 'thinking_budget' in agg_df.columns:
-        # Group by model_size and thinking_budget, then compare thinking modes
         for (model_size, budget) in agg_df[['model_size', 'thinking_budget']].drop_duplicates().values:
             thinking_on = agg_df[(agg_df['model_size'] == model_size) &
                                  (agg_df['thinking_budget'] == budget) &
@@ -92,7 +72,6 @@ def compute_thinking_consistency_effects(agg_df: pd.DataFrame) -> pd.DataFrame:
                     'delta_success_30': on_row['success_rate_30'] - off_row['success_rate_30']
                 })
     else:
-        # Original logic without budget
         for model_size in agg_df['model_size'].unique():
             thinking_on = agg_df[(agg_df['model_size'] == model_size) & (agg_df['thinking'] == True)]
             thinking_off = agg_df[(agg_df['model_size'] == model_size) & (agg_df['thinking'] == False)]
@@ -113,22 +92,15 @@ def compute_thinking_consistency_effects(agg_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def compute_scaling_pattern_analysis(agg_df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Analyze scaling patterns to identify anomalies.
-
-    Returns:
-        DataFrame with pairwise model comparisons
-    """
+    """Pairwise model comparisons to identify scaling anomalies (negative delta)."""
     thinking_df = agg_df[agg_df['thinking'] == True].copy()
 
-    # If thinking_budget is present, analyze separately for each budget
     if 'thinking_budget' in thinking_df.columns:
         all_results = []
 
         for budget in thinking_df['thinking_budget'].unique():
             budget_df = thinking_df[thinking_df['thinking_budget'] == budget].copy()
 
-            # Sort by model size
             size_order = {'4b': 0, '8b': 1, '14b': 2, '30b': 3, '32b': 3}
             budget_df['size_order'] = budget_df['model_size'].map(size_order)
             budget_df = budget_df.sort_values('size_order')
@@ -156,8 +128,6 @@ def compute_scaling_pattern_analysis(agg_df: pd.DataFrame) -> pd.DataFrame:
 
         return pd.DataFrame(all_results)
     else:
-        # Original logic without budget
-        # Sort by model size
         size_order = {'4b': 0, '8b': 1, '14b': 2, '30b': 3, '32b': 3}
         thinking_df['size_order'] = thinking_df['model_size'].map(size_order)
         thinking_df = thinking_df.sort_values('size_order')
@@ -171,8 +141,6 @@ def compute_scaling_pattern_analysis(agg_df: pd.DataFrame) -> pd.DataFrame:
 
             delta_f1 = next_model['f1_mean'] - curr['f1_mean']
             delta_recall = next_model['recall_mean'] - curr['recall_mean']
-
-            # Determine if this is an anomaly (negative change)
             is_anomaly = delta_f1 < 0 or delta_recall < 0
 
             results.append({
@@ -187,42 +155,31 @@ def compute_scaling_pattern_analysis(agg_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def stratify_by_word_length(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Compute recall stratified by word length.
-
-    For each configuration, compute what % of 4-letter, 5-letter, etc.
-    words were successfully generated.
-    """
+    """Compute recall by word-length category for each configuration."""
     results = []
 
-    # Include thinking_budget in grouping if available
     group_cols = ['model_size', 'thinking']
     if 'thinking_budget' in df.columns:
         group_cols.append('thinking_budget')
 
     for group_keys, group in df.groupby(group_cols):
-        # Aggregate across all puzzles for this configuration
         length_stats = defaultdict(lambda: {'found': 0, 'total': 0})
 
         for _, row in group.iterrows():
-            # Count actual words by length
             for word in row['actual_words']:
                 length_cat = categorize_word_length(len(word))
                 length_stats[length_cat]['total'] += 1
 
-            # Count found words by length
             for word in row['correctly_predicted']:
                 length_cat = categorize_word_length(len(word))
                 length_stats[length_cat]['found'] += 1
 
-        # Compute recall for each length category
         for length_cat in ['4', '5', '6', '7+']:
             if length_stats[length_cat]['total'] > 0:
                 recall = length_stats[length_cat]['found'] / length_stats[length_cat]['total']
             else:
                 recall = np.nan
 
-            # Unpack group keys
             if len(group_cols) == 3:
                 model_size, thinking, thinking_budget = group_keys
                 results.append({
@@ -249,27 +206,16 @@ def stratify_by_word_length(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def compute_word_length_correlation(df: pd.DataFrame) -> Dict:
-    """
-    Analyze relationship between word length and generation success.
-    Longer words should be harder to generate.
-
-    Returns:
-        Dict with length-difficulty correlation statistics
-    """
-    # Filter out rows with NaN length values
+    """Test whether missed words are longer than found words (paired t-test + Cohen's d)."""
     valid_rows = df.dropna(subset=['avg_word_length_missed', 'avg_word_length_found'])
 
     if len(valid_rows) == 0:
         return {'error': 'No valid length data'}
 
-    # Compare average lengths
     all_length_missed = valid_rows['avg_word_length_missed'].values
     all_length_found = valid_rows['avg_word_length_found'].values
 
-    # Paired t-test
     t_stat, p_value = stats.ttest_rel(all_length_missed, all_length_found)
-
-    # Effect size (Cohen's d)
     cohens_d = compute_cohens_d(all_length_missed, all_length_found)
 
     return {
@@ -286,18 +232,12 @@ def compute_word_length_correlation(df: pd.DataFrame) -> Dict:
 
 
 def compute_volume_performance_analysis(df: pd.DataFrame) -> Dict:
-    """
-    Analyze relationship between generation volume and performance metrics.
-
-    Returns:
-        Dict with correlation statistics and volume analysis
-    """
+    """Correlate generation volume with precision, recall, and F1."""
     thinking_df = df[df['thinking'] == True].copy()
 
     if len(thinking_df) == 0:
         return {'error': 'No thinking mode data'}
 
-    # Overall correlations
     volume_metrics = ['num_predicted', 'precision', 'recall', 'f1']
     available_metrics = [m for m in volume_metrics if m in thinking_df.columns]
 
@@ -315,7 +255,6 @@ def compute_volume_performance_analysis(df: pd.DataFrame) -> Dict:
         'by_model': {}
     }
 
-    # Per-model correlations
     for model in thinking_df['model_size'].unique():
         model_data = thinking_df[thinking_df['model_size'] == model]
         if len(model_data) > 1:
@@ -329,7 +268,6 @@ def compute_volume_performance_analysis(df: pd.DataFrame) -> Dict:
                 'mean_recall': float(model_data['recall'].mean()),
             }
 
-    # Volume by thinking mode
     analysis['thinking_mode_effect'] = {}
     for model in df['model_size'].unique():
         thinking_on = df[(df['model_size'] == model) & (df['thinking'] == True)]

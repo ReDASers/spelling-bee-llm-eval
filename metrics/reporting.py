@@ -1,6 +1,4 @@
-"""
-Output and reporting: print_summary and save_results.
-"""
+"""Console output and file export for computed metrics."""
 
 import os
 import json
@@ -20,7 +18,7 @@ def print_summary(agg_df: pd.DataFrame, sig_df: pd.DataFrame, length_stats: Dict
                   optimal_budget: Dict = None, volume_analysis: Dict = None,
                   word_difficulty_strat: pd.DataFrame = None, calibration: Dict = None,
                   failure_analysis: Dict = None, agreement: pd.DataFrame = None):
-    """Print human-readable summary with new metrics"""
+    """Print human-readable summary of all computed metrics."""
     print("\n" + "="*80)
     print("COMPREHENSIVE METRICS SUMMARY")
     print("="*80)
@@ -37,7 +35,6 @@ def print_summary(agg_df: pd.DataFrame, sig_df: pd.DataFrame, length_stats: Dict
         print(f"  Recall:    {row['recall_mean']:.3f} ± {row['recall_std']:.3f}")
         print(f"  F1:        {row['f1_mean']:.3f} ± {row['f1_std']:.3f}")
 
-        # Generation volume metrics
         num_pred = row.get('num_predicted_mean', np.nan)
         efficiency = row.get('efficiency', np.nan)
         print(f"  Generation Volume: {num_pred:.1f} predictions/puzzle")
@@ -45,13 +42,11 @@ def print_summary(agg_df: pd.DataFrame, sig_df: pd.DataFrame, length_stats: Dict
 
         print(f"  Difficulty-Weighted Recall: {row.get('difficulty_weighted_recall_mean', np.nan):.3f}")
 
-        # Consistency metrics
         cv = row.get('cv_f1', np.nan)
         success_30 = row.get('success_rate_30', 0) * 100
         p5 = row.get('f1_p5', np.nan)
         print(f"  Consistency: CV={cv:.2f}, Success@30={success_30:.0f}%, Worst 5%={p5:.3f}")
 
-        # Length coverage
         l4 = row.get('length_4_recall_mean', np.nan) * 100
         l7 = row.get('length_7+_recall_mean', np.nan) * 100
         print(f"  Length Coverage: 4-letter={l4:.1f}%, 7+letter={l7:.1f}%")
@@ -83,7 +78,6 @@ def print_summary(agg_df: pd.DataFrame, sig_df: pd.DataFrame, length_stats: Dict
     else:
         print(f"\nError computing length correlation: {length_stats['error']}")
 
-    # Thinking Budget Analysis
     if budget_effects is not None and len(budget_effects) > 0:
         print("\n" + "-" * 80)
         print("THINKING BUDGET EFFECTS:")
@@ -118,7 +112,6 @@ def print_summary(agg_df: pd.DataFrame, sig_df: pd.DataFrame, length_stats: Dict
             print(f"  F1 improvement: {row['f1_improvement']:+.3f} over {row['budget_range']} token range")
             print(f"  Efficiency: {row['f1_improvement_per_1k']:+.4f} F1 points per 1K tokens")
 
-    # Volume-Performance Analysis
     if volume_analysis is not None and 'error' not in volume_analysis:
         print("\n" + "-" * 80)
         print("VOLUME-PERFORMANCE RELATIONSHIP:")
@@ -143,7 +136,6 @@ def print_summary(agg_df: pd.DataFrame, sig_df: pd.DataFrame, length_stats: Dict
                 vol_pct = stats_data.get('volume_increase_pct', 0)
                 print(f"  {model.upper():3}: +{vol_inc:.1f} predictions ({vol_pct:+.1f}%)")
 
-    # Word-Level Difficulty Stratification
     if word_difficulty_strat is not None and len(word_difficulty_strat) > 0:
         print("\n" + "-" * 80)
         print("WORD-LEVEL DIFFICULTY STRATIFICATION (BY HUMAN SUCCESS RATES):")
@@ -172,7 +164,6 @@ def print_summary(agg_df: pd.DataFrame, sig_df: pd.DataFrame, length_stats: Dict
                         if q in quartile_recalls.index:
                             print(f"  {q}: {quartile_recalls[q]*100:.1f}% recall")
 
-    # Model-Human Calibration
     if calibration is not None and 'error' not in calibration:
         print("\n" + "-" * 80)
         print("MODEL-HUMAN CALIBRATION:")
@@ -193,7 +184,6 @@ def print_summary(agg_df: pd.DataFrame, sig_df: pd.DataFrame, length_stats: Dict
                 avg_corr = np.mean(calibration_by_model[model])
                 print(f"  {model.upper():3}: r = {avg_corr:+.3f}")
 
-    # Failure Mode Analysis
     if failure_analysis is not None and 'error' not in failure_analysis:
         print("\n" + "-" * 80)
         print("FAILURE MODE ANALYSIS:")
@@ -213,7 +203,6 @@ def print_summary(agg_df: pd.DataFrame, sig_df: pd.DataFrame, length_stats: Dict
             print(f"\nAnalyzed {summary.get('total_easy_words_analyzed', 0)} easy words")
             print(f"Mean model miss rate on easy words: {summary.get('mean_miss_rate', 0)*100:.1f}%")
 
-    # Inter-Model Agreement
     if agreement is not None and len(agreement) > 0:
         print("\n" + "-" * 80)
         print("INTER-MODEL AGREEMENT:")
@@ -237,35 +226,29 @@ def save_results(df: pd.DataFrame, agg_df: pd.DataFrame, sig_df: pd.DataFrame,
                  word_difficulty_strat_df: pd.DataFrame, model_human_calibration: Dict,
                  failure_mode_analysis: Dict, inter_model_agreement_df: pd.DataFrame,
                  output_dir: str):
-    """Save all results to files"""
+    """Save all results to CSV, JSON, and LaTeX files."""
     os.makedirs(output_dir, exist_ok=True)
 
-    # Save detailed metrics (per puzzle)
     csv_path = os.path.join(output_dir, 'detailed_metrics.csv')
     df.to_csv(csv_path, index=False)
     print(f"\nSaved detailed metrics to: {csv_path}")
 
-    # Save aggregated metrics
     agg_path = os.path.join(output_dir, 'aggregated_metrics.csv')
     agg_df.to_csv(agg_path, index=False)
     print(f"Saved aggregated metrics to: {agg_path}")
 
-    # Save statistical significance results
     sig_path = os.path.join(output_dir, 'statistical_significance.csv')
     sig_df.to_csv(sig_path, index=False)
     print(f"Saved significance tests to: {sig_path}")
 
-    # Save difficulty stratification
     diff_path = os.path.join(output_dir, 'metrics_by_difficulty.csv')
     difficulty_df.to_csv(diff_path, index=False)
     print(f"Saved difficulty metrics to: {diff_path}")
 
-    # Save word length stratification
     length_path = os.path.join(output_dir, 'metrics_by_word_length.csv')
     length_df.to_csv(length_path, index=False)
     print(f"Saved word length metrics to: {length_path}")
 
-    # Save thinking budget analyses
     if len(budget_effects_df) > 0:
         budget_effects_path = os.path.join(output_dir, 'thinking_budget_effects.csv')
         budget_effects_df.to_csv(budget_effects_path, index=False)
@@ -276,7 +259,6 @@ def save_results(df: pd.DataFrame, agg_df: pd.DataFrame, sig_df: pd.DataFrame,
         budget_interaction_df.to_csv(budget_interaction_path, index=False)
         print(f"Saved budget-model interaction to: {budget_interaction_path}")
 
-    # Save word-level difficulty analyses
     if len(word_difficulty_strat_df) > 0:
         word_diff_path = os.path.join(output_dir, 'word_difficulty_stratification.csv')
         word_difficulty_strat_df.to_csv(word_diff_path, index=False)
@@ -287,7 +269,6 @@ def save_results(df: pd.DataFrame, agg_df: pd.DataFrame, sig_df: pd.DataFrame,
         inter_model_agreement_df.to_csv(agreement_path, index=False)
         print(f"Saved inter-model agreement to: {agreement_path}")
 
-    # Save JSON summary with all analyses
     summary = {
         'num_puzzles': int(df['puzzle_id'].nunique()),
         'num_configurations': len(agg_df),
@@ -309,7 +290,6 @@ def save_results(df: pd.DataFrame, agg_df: pd.DataFrame, sig_df: pd.DataFrame,
         'inter_model_agreement': inter_model_agreement_df.to_dict('records') if len(inter_model_agreement_df) > 0 else []
     }
 
-    # Convert numpy types to Python natives for JSON serialization
     summary = convert_numpy_types(summary)
 
     json_path = os.path.join(output_dir, 'metrics_summary.json')
@@ -317,7 +297,6 @@ def save_results(df: pd.DataFrame, agg_df: pd.DataFrame, sig_df: pd.DataFrame,
         json.dump(summary, f, indent=2)
     print(f"Saved JSON summary to: {json_path}")
 
-    # Generate and save all LaTeX tables (12 base + up to 7 new tables)
     num_tables = 12
     if len(budget_effects_df) > 0:
         num_tables += 1
@@ -326,13 +305,13 @@ def save_results(df: pd.DataFrame, agg_df: pd.DataFrame, sig_df: pd.DataFrame,
         if optimal_budget and 'error' not in optimal_budget:
             num_tables += 1
         if volume_analysis and 'error' not in volume_analysis:
-            num_tables += 1  # Volume analysis table
+            num_tables += 1
         if len(word_difficulty_strat_df) > 0:
-            num_tables += 1  # Word difficulty stratification
+            num_tables += 1
         if model_human_calibration and 'error' not in model_human_calibration:
-            num_tables += 1  # Calibration
+            num_tables += 1
         if failure_mode_analysis and 'error' not in failure_mode_analysis:
-            num_tables += 1  # Failure analysis
+            num_tables += 1
 
     latex_tables = generate_all_latex_tables(
         agg_df, sig_df, length_stats, difficulty_df,

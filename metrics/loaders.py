@@ -1,6 +1,4 @@
-"""
-Data loading functions for results files and difficulty data.
-"""
+"""Data loading for results files and human difficulty data."""
 
 import os
 import json
@@ -12,16 +10,10 @@ import pandas as pd
 
 
 def load_word_difficulty_data(difficulty_dir: str = 'data/puzzles') -> Dict[int, Dict[str, float]]:
-    """
-    Load word difficulty data from NYT Spelling Bee user success rates.
+    """Load word difficulty from NYT user success rates.
 
-    Args:
-        difficulty_dir: Directory containing bee_YYYYMMDD.json files
-
-    Returns:
-        Dict mapping puzzle_id -> {word: difficulty_score}
-        difficulty_score = 1 - (user_success_count / n), where higher = harder.
-        n defaults to 10,000 (approximate active user sample size per puzzle).
+    Returns dict mapping puzzle_id -> {word: difficulty_score}.
+    difficulty_score = 1 - (user_count / n); n defaults to ~10,000.
     """
     if not os.path.exists(difficulty_dir):
         print(f"Warning: Difficulty data directory not found: {difficulty_dir}")
@@ -42,8 +34,7 @@ def load_word_difficulty_data(difficulty_dir: str = 'data/puzzles') -> Dict[int,
             if not puzzle_id or not answers:
                 continue
 
-            # Convert user success counts to difficulty scores
-            # difficulty = 1 - (success_rate), so higher score = harder word
+            # difficulty = 1 - success_rate; higher = harder
             word_difficulties = {}
             for word, user_count in answers.items():
                 success_rate = user_count / n
@@ -61,42 +52,31 @@ def load_word_difficulty_data(difficulty_dir: str = 'data/puzzles') -> Dict[int,
 
 
 def load_results_file(filepath: str) -> Dict:
-    """Load a single results JSON file"""
+    """Load a single results JSON file."""
     with open(filepath, 'r', encoding='utf-8') as f:
         return json.load(f)
 
 
 def find_all_results(results_dir: str) -> List[Tuple[str, str, bool, int]]:
-    """
-    Find all result files in directory and subdirectories.
-    Supports three model families:
-    - Qwen: qwen3_4b_thinking_results.json
-    - Claude: claude_haiku_thinking_16384_results.json
-    - GPT-5: gpt5_reasoning_high_results.json
+    """Find all result files across Qwen, Claude, and GPT-5 naming conventions.
 
-    Returns:
-        List of (filepath, model_size, thinking_enabled, thinking_budget) tuples
+    Returns list of (filepath, model_size, thinking_enabled, thinking_budget).
     """
     results = []
     results_path = Path(results_dir)
 
-    # Look for JSON files in root and subdirectories
     for filepath in results_path.rglob('*.json'):
-        # Skip files in 'old' directory or summary files
         if 'old' in filepath.parts or 'summary' in filepath.name.lower():
             continue
 
         filename = filepath.stem
 
-        # Try different filename patterns
-
-        # Pattern 1: Qwen - qwen3_4b_thinking_results.json
+        # Qwen: qwen3_4b_thinking_results.json
         match = re.match(r'(qwen\d+)_(\d+b)_(thinking|nothinking)_results', filename)
         if match:
             family, size, mode = match.groups()
             thinking_enabled = (mode == 'thinking')
 
-            # Try to infer thinking_budget from directory structure
             parent_dir = filepath.parent.name
             thinking_budget = None
 
@@ -107,7 +87,7 @@ def find_all_results(results_dir: str) -> List[Tuple[str, str, bool, int]]:
             results.append((str(filepath), size, thinking_enabled, thinking_budget))
             continue
 
-        # Pattern 2: Claude - claude_haiku_thinking_16384_results.json
+        # Claude: claude_haiku_thinking_16384_results.json
         match = re.match(r'(claude)_(haiku|sonnet|opus)_(thinking|nothinking)_(\d+)_results', filename)
         if match:
             family, variant, mode, budget = match.groups()
@@ -118,14 +98,13 @@ def find_all_results(results_dir: str) -> List[Tuple[str, str, bool, int]]:
             results.append((str(filepath), model_size, thinking_enabled, thinking_budget))
             continue
 
-        # Pattern 3: GPT-5 - gpt5_reasoning_high_results.json
+        # GPT-5: gpt5_reasoning_high_results.json
         match = re.match(r'(gpt\d+)_reasoning_(low|medium|high)_results', filename)
         if match:
             family, effort = match.groups()
-            model_size = f"{family}-mini"  # GPT-5-mini
-            thinking_enabled = True  # Reasoning is always enabled for these configs
+            model_size = f"{family}-mini"
+            thinking_enabled = True  # reasoning configs always have thinking on
 
-            # Map reasoning effort to approximate budget equivalent
             effort_to_budget = {
                 'low': 4096,
                 'medium': 8192,
@@ -140,19 +119,7 @@ def find_all_results(results_dir: str) -> List[Tuple[str, str, bool, int]]:
 
 
 def load_all_results(results_dir: str, additional_dirs: List[str] = None) -> pd.DataFrame:
-    """
-    Load all results files and combine into DataFrame.
-    Supports loading from multiple directories to include Qwen, Claude, and GPT-5 results.
-
-    Args:
-        results_dir: Primary results directory (e.g., 'results/')
-        additional_dirs: Additional directories to scan (e.g., ['claude-results/', 'openai-results/'])
-
-    Returns:
-        DataFrame with columns: model_size, thinking, thinking_budget, puzzle_id, date,
-        center_letter, all_letters, predicted_words, actual_words, etc.
-    """
-    # Collect files from all directories
+    """Load all results files from one or more directories into a DataFrame."""
     all_files = []
     dirs_to_scan = [results_dir]
     if additional_dirs:
@@ -190,18 +157,13 @@ def load_all_results(results_dir: str, additional_dirs: List[str] = None) -> pd.
         data = load_results_file(filepath)
         metadata = data.get('metadata', {})
 
-        # Handle different metadata formats
-        # - Qwen/Claude: thinking_budget
-        # - GPT-5: reasoning_effort (map to budget equivalent)
         thinking_budget = metadata.get('thinking_budget')
 
         if thinking_budget is None and 'reasoning_effort' in metadata:
-            # GPT-5 uses reasoning_effort instead of thinking_budget
             effort_to_budget = {'low': 4096, 'medium': 8192, 'high': 16384}
             thinking_budget = effort_to_budget.get(metadata['reasoning_effort'])
 
         if thinking_budget is None:
-            # Fall back to budget extracted from filename/path
             thinking_budget = thinking_budget_from_path
 
         for prediction in data['predictions']:
@@ -228,7 +190,6 @@ def load_all_results(results_dir: str, additional_dirs: List[str] = None) -> pd.
     print(f"\nLoaded {len(df)} predictions from {df['puzzle_id'].nunique()} unique puzzles")
     print(f"Configurations: {len(df.groupby(['model_size', 'thinking', 'thinking_budget']))}")
 
-    # Print budget distribution
     if 'thinking_budget' in df.columns and df['thinking_budget'].notna().any():
         print(f"\nThinking Budget Distribution:")
         for budget in sorted(df['thinking_budget'].dropna().unique()):

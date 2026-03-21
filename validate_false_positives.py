@@ -1,12 +1,4 @@
-"""
-Validate false positives against standard dictionaries.
-
-Categorizes model-generated false positives (words not in NYT answer list) into:
-  (a) Valid English words excluded by NYT's editorial curation
-  (b) Genuine hallucinations (not in any standard dictionary)
-
-Uses NLTK words corpus + WordNet as the reference dictionary.
-"""
+"""Validate false positives against NLTK + WordNet to separate real English words from hallucinations."""
 
 import json
 import csv
@@ -20,10 +12,8 @@ from nltk.corpus import words, wordnet
 
 
 def build_dictionary():
-    """Build comprehensive English dictionary from NLTK + WordNet."""
-    # NLTK words corpus
+    """Combine NLTK words corpus and WordNet lemmas into a single set."""
     nltk_words = set(w.lower() for w in words.words())
-    # WordNet lemmas (includes multi-word, filter to single words)
     wn_words = set(
         l.name().lower()
         for s in wordnet.all_synsets()
@@ -35,7 +25,6 @@ def build_dictionary():
 
 
 def collect_false_positives(data_dir: Path):
-    """Collect all false positives from result files, grouped by model family."""
     fps_by_family = defaultdict(Counter)  # family -> {word: count}
     fps_all = Counter()
 
@@ -85,7 +74,6 @@ def main():
         print("No false positives found.")
         return
 
-    # Categorize
     valid_english = {w for w in unique_fps if w in dictionary}
     hallucinations = unique_fps - valid_english
 
@@ -93,7 +81,6 @@ def main():
     print(f"Valid English words (in NLTK/WordNet): {len(valid_english)} ({100*len(valid_english)/len(unique_fps):.1f}%)")
     print(f"Genuine hallucinations (not in any dictionary): {len(hallucinations)} ({100*len(hallucinations)/len(unique_fps):.1f}%)")
 
-    # By occurrence count
     valid_occurrences = sum(fps_all[w] for w in valid_english)
     halluc_occurrences = sum(fps_all[w] for w in hallucinations)
     total_occ = valid_occurrences + halluc_occurrences
@@ -101,7 +88,6 @@ def main():
     print(f"  Valid English: {valid_occurrences} ({100*valid_occurrences/total_occ:.1f}%)")
     print(f"  Hallucinations: {halluc_occurrences} ({100*halluc_occurrences/total_occ:.1f}%)")
 
-    # Per-family breakdown
     print(f"\n=== Per-Family Breakdown ===")
     family_stats = {}
     for family in ['Qwen', 'Claude-Haiku', 'GPT-5-mini']:
@@ -133,19 +119,16 @@ def main():
         print(f"  Hallucinations: {len(fam_halluc)} ({100-family_stats[family]['valid_pct']:.1f}%)")
         print(f"  By occurrence: {fam_valid_occ}/{fam_total_occ} valid ({family_stats[family]['valid_occ_pct']:.1f}%)")
 
-    # Top valid English FPs (most frequently generated across all models)
     print(f"\n=== Top 20 Valid English Words Excluded by NYT ===")
     valid_sorted = sorted(valid_english, key=lambda w: fps_all[w], reverse=True)
     for w in valid_sorted[:20]:
         print(f"  {w:15s} (generated {fps_all[w]} times)")
 
-    # Top hallucinated words
     print(f"\n=== Top 20 Genuine Hallucinations ===")
     halluc_sorted = sorted(hallucinations, key=lambda w: fps_all[w], reverse=True)
     for w in halluc_sorted[:20]:
         print(f"  {w:15s} (generated {fps_all[w]} times)")
 
-    # Save results
     results = {
         'dictionary_size': len(dictionary),
         'total_unique_fps': len(unique_fps),

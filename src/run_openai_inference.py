@@ -1,13 +1,6 @@
-"""
-NY Times Spelling Bee - OpenAI GPT Model Inference Script
+"""GPT-5 Spelling Bee inference across 58 puzzles with reasoning effort ablation.
 
-Runs GPT-5 reasoning model inference on all 58 puzzles with and without extended reasoning.
-
-USAGE:
-    export OPENAI_API_KEY='your_api_key_here'
-    python run_openai_inference.py
-
-Results saved to ./openai-logs/ and ./openai-results/
+Usage: export OPENAI_API_KEY='...' && python run_openai_inference.py
 """
 
 import os
@@ -23,9 +16,7 @@ from tqdm.asyncio import tqdm as async_tqdm
 if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-# ============================================================================
-# CONFIGURATION
-# ============================================================================
+# --- Configuration ---
 
 BEE_DATA_PATH = "./Bee-Daily-Pull/"
 RESULTS_PATH = "./openai-results/"
@@ -58,18 +49,14 @@ MAX_CONCURRENT_REQUESTS = 12
 REASONING_PARAMS = {}
 NON_REASONING_PARAMS = {}
 
-# ============================================================================
-# DATA LOADING
-# ============================================================================
+# --- Data Loading ---
 
 def load_bee_data(filename):
-    """Load puzzle data from JSON file"""
     with open(filename, 'r') as f:
         return json.load(f)
 
 
 def get_all_puzzle_dates(start_date, end_date):
-    """Generate list of dates between start and end (inclusive)"""
     start = datetime.strptime(start_date, "%Y%m%d")
     end = datetime.strptime(end_date, "%Y%m%d")
     
@@ -83,14 +70,13 @@ def get_all_puzzle_dates(start_date, end_date):
 
 
 def extract_puzzle_letters(words):
-    """Extract unique letters from word list"""
     if not words:
         return set()
     return set(''.join(words).lower())
 
 
 def identify_center_letter(words):
-    """Identify the mandatory center letter (appears in all words)"""
+    """Find the letter present in every word; fall back to most frequent."""
     if not words:
         return None
     
@@ -112,12 +98,9 @@ def identify_center_letter(words):
     
     return None
 
-# ============================================================================
-# WORD VALIDATION
-# ============================================================================
+# --- Word Validation ---
 
 def is_valid_bee_word(word, center_letter, allowed_letters):
-    """Check if word satisfies puzzle constraints"""
     word = word.strip().lower()
     return (word
             and word.isalpha()
@@ -127,7 +110,6 @@ def is_valid_bee_word(word, center_letter, allowed_letters):
 
 
 def parse_word_predictions(generated_text, center_letter, allowed_letters):
-    """Parse model output and extract all valid words"""
     lines = generated_text.strip().split('\n')
     
     valid_words = []
@@ -157,12 +139,9 @@ def parse_word_predictions(generated_text, center_letter, allowed_letters):
     
     return valid_words
 
-# ============================================================================
-# PROMPT GENERATION
-# ============================================================================
+# --- Prompt Generation ---
 
 def create_word_prediction_prompt(center_letter, outer_letters):
-    """Create prompt for word generation task"""
     all_letters = sorted([center_letter] + outer_letters)
     
     letters_display = ', '.join(all_letters).upper()
@@ -204,12 +183,9 @@ After your thinking, provide ONLY a clean list of valid words.
 
 Start your word list now:"""
 
-# ============================================================================
-# SHARED RESPONSE EXTRACTION UTILITIES
-# ============================================================================
+# --- Response Extraction ---
 
 def extract_text_from_response(response):
-    """Extract text from OpenAI response output"""
     if hasattr(response, 'output_text'):
         return response.output_text
     
@@ -226,7 +202,6 @@ def extract_text_from_response(response):
 
 
 def extract_reasoning_from_response(response):
-    """Extract reasoning trace/summary from OpenAI response output"""
     if not hasattr(response, 'output'):
         return ""
     
@@ -240,13 +215,10 @@ def extract_reasoning_from_response(response):
     
     return '\n'.join(reasoning_parts)
 
-# ============================================================================
-# OPENAI API INTEGRATION
-# ============================================================================
+# --- OpenAI API Integration ---
 
 class OpenAIGenerator:
-    """Handles OpenAI API calls with reasoning support"""
-    
+
     def __init__(self, api_key=None):
         if api_key is None:
             api_key = os.getenv('OPENAI_API_KEY')
@@ -262,18 +234,7 @@ class OpenAIGenerator:
         self.non_reasoning_model = OPENAI_NON_REASONING_MODEL
     
     def generate(self, prompt, enable_reasoning=False, reasoning_effort=None, max_tokens=None):
-        """
-        Generate response from OpenAI with optional reasoning.
-        
-        Args:
-            prompt: Input prompt text
-            enable_reasoning: Whether to enable reasoning mode
-            reasoning_effort: Reasoning effort level ("low", "medium", "high")
-            max_tokens: Maximum tokens for generation
-        
-        Returns:
-            tuple: (answer_text, generation_metadata)
-        """
+        """Returns (answer_text, generation_metadata)."""
         if reasoning_effort is None:
             reasoning_effort = DEFAULT_REASONING_EFFORT
         if max_tokens is None:
@@ -335,7 +296,7 @@ class OpenAIGenerator:
 
 
 class AsyncOpenAIGenerator:
-    """Async version of OpenAIGenerator for batch processing"""
+    """Async OpenAIGenerator with semaphore-based rate limiting."""
     
     def __init__(self, api_key=None, max_concurrent=MAX_CONCURRENT_REQUESTS):
         if api_key is None:
@@ -353,20 +314,7 @@ class AsyncOpenAIGenerator:
         self.semaphore = asyncio.Semaphore(max_concurrent)
     
     async def generate(self, prompt, enable_reasoning=False, reasoning_effort=None, max_tokens=None, max_retries=3):
-        """
-        Async generate response from OpenAI with optional reasoning.
-        Includes exponential backoff retry logic for rate limits.
-        
-        Args:
-            prompt: Input prompt text
-            enable_reasoning: Whether to enable reasoning mode
-            reasoning_effort: Reasoning effort level ("low", "medium", "high")
-            max_tokens: Maximum tokens for generation
-            max_retries: Maximum number of retries for rate limit errors
-        
-        Returns:
-            tuple: (answer_text, generation_metadata)
-        """
+        """Returns (answer_text, metadata) with exponential backoff on rate limits."""
         if reasoning_effort is None:
             reasoning_effort = DEFAULT_REASONING_EFFORT
         if max_tokens is None:
@@ -438,12 +386,9 @@ class AsyncOpenAIGenerator:
                     print(f"\n[ERROR] Error calling OpenAI API: {e}")
                     raise
 
-# ============================================================================
-# FILE STORAGE
-# ============================================================================
+# --- File Storage ---
 
 def save_structured_logs(logs_data, enable_reasoning, reasoning_effort, max_tokens, output_dir):
-    """Save structured logs with complete generation details"""
     os.makedirs(output_dir, exist_ok=True)
     
     if enable_reasoning:
@@ -464,7 +409,6 @@ def save_structured_logs(logs_data, enable_reasoning, reasoning_effort, max_toke
 
 
 def save_results(results_data, enable_reasoning, reasoning_effort, max_tokens, output_dir):
-    """Save results with predictions vs ground truth"""
     os.makedirs(output_dir, exist_ok=True)
     
     if enable_reasoning:
@@ -483,22 +427,10 @@ def save_results(results_data, enable_reasoning, reasoning_effort, max_tokens, o
     print(f"[OK] Results saved: {filepath}")
     return filepath
 
-# ============================================================================
-# MAIN INFERENCE PIPELINE
-# ============================================================================
+# --- Main Inference Pipeline ---
 
 def run_openai_inference(enable_reasoning=False, reasoning_effort=None, max_tokens=None):
-    """
-    Run inference on all puzzles with GPT (sequential processing).
-    
-    Args:
-        enable_reasoning: Whether to enable reasoning mode
-        reasoning_effort: Reasoning effort level
-        max_tokens: Maximum tokens
-    
-    Returns:
-        tuple: (logs_filepath, results_filepath)
-    """
+    """Sequential inference on all 58 puzzles. Returns (logs_path, results_path)."""
     if reasoning_effort is None:
         reasoning_effort = DEFAULT_REASONING_EFFORT
     if max_tokens is None:
@@ -623,18 +555,7 @@ def run_openai_inference(enable_reasoning=False, reasoning_effort=None, max_toke
 
 
 async def run_openai_inference_batched(enable_reasoning=False, reasoning_effort=None, max_tokens=None, batch_size=BATCH_SIZE):
-    """
-    Run inference on all puzzles using batched async processing (much faster).
-    
-    Args:
-        enable_reasoning: Whether to enable reasoning mode
-        reasoning_effort: Reasoning effort level
-        max_tokens: Maximum tokens
-        batch_size: Number of puzzles to process concurrently
-    
-    Returns:
-        tuple: (logs_filepath, results_filepath)
-    """
+    """Async batched inference. Returns (logs_path, results_path)."""
     if reasoning_effort is None:
         reasoning_effort = DEFAULT_REASONING_EFFORT
     if max_tokens is None:
@@ -789,7 +710,7 @@ async def run_openai_inference_batched(enable_reasoning=False, reasoning_effort=
 
 
 def run_openai_inference_wrapper(enable_reasoning=False, reasoning_effort=None, max_tokens=None, use_batching=True, batch_size=BATCH_SIZE):
-    """Wrapper to run either sequential or batched inference"""
+    """Dispatch to sequential or batched inference."""
     if use_batching:
         return asyncio.run(run_openai_inference_batched(
             enable_reasoning, reasoning_effort, max_tokens, batch_size
@@ -799,22 +720,10 @@ def run_openai_inference_wrapper(enable_reasoning=False, reasoning_effort=None, 
             enable_reasoning, reasoning_effort, max_tokens
         )
 
-# ============================================================================
-# EXPERIMENT COORDINATOR
-# ============================================================================
+# --- Experiment Coordinator ---
 
 def run_all_openai_experiments(run_ablations=True, use_batching=True, batch_size=BATCH_SIZE):
-    """
-    Run all experiment configurations.
-    
-    Args:
-        run_ablations: If True, run all ablation configurations
-        use_batching: If True, use batched async processing
-        batch_size: Batch size for concurrent processing
-    
-    Returns:
-        dict: Summary of all runs
-    """
+    """Run all reasoning effort ablation configs, optionally with batching."""
     print("\n" + "="*80)
     print("RUNNING ALL OPENAI GPT EXPERIMENTS")
     if use_batching:
@@ -973,9 +882,7 @@ def run_all_openai_experiments(run_ablations=True, use_batching=True, batch_size
     
     return summary
 
-# ============================================================================
-# MAIN ENTRY POINT
-# ============================================================================
+# --- Main ---
 
 if __name__ == "__main__":
     print("\n" + "="*80)

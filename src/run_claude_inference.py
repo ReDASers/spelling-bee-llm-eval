@@ -1,24 +1,6 @@
-"""
-NY Times Spelling Bee - Claude Model Inference Script
-======================================================
-Runs Claude 4.5 haiku inference on all 58 puzzles with and without extended thinking.
+"""Claude Haiku Spelling Bee inference across 58 puzzles with thinking budget ablation.
 
-USAGE:
-======
-1. Set your API key:
-   export ANTHROPIC_API_KEY='your_api_key_here'
-
-2. Run all experiments (2 configurations: thinking + non-thinking):
-   python run_claude_inference.py
-
-3. Or run specific mode:
-   from run_claude_inference import run_claude_inference
-   run_claude_inference(enable_thinking=True)
-
-Results will be saved in:
-- ./claude-logs/ - Detailed generation logs
-- ./claude-results/ - Predictions vs ground truth
-
+Usage: export ANTHROPIC_API_KEY='...' && python run_claude_inference.py
 """
 
 import os
@@ -31,82 +13,53 @@ from tqdm import tqdm
 from tqdm.asyncio import tqdm as async_tqdm
 import traceback
 
-# ============================================================================
-# EXPERIMENT CONFIGURATION
-# ============================================================================
+# --- Configuration ---
 
-# Puzzle data paths
 BEE_DATA_PATH = "./Bee-Daily-Pull/"
 RESULTS_PATH = "./claude-results/"
 LOG_PATH = "./claude-logs/"
 
-# Fixed date range (58 puzzles)
-START_DATE = "20250602"  # June 2, 2025
-END_DATE = "20250729"    # July 29, 2025
+START_DATE = "20250602"
+END_DATE = "20250729"
 
-# Puzzle constraints
 MIN_WORD_LENGTH = 4
 TOTAL_ALPHABET_SIZE = 7
 
-# Claude model configuration
 CLAUDE_MODEL = "claude-haiku-4-5-20251001"
 
-# Ablation configurations (thinking budget, overall max_tokens)
-# Ablation budget pairs: (thinking_budget, max_tokens)
+# (thinking_budget, max_tokens) pairs
 ABLATION_CONFIGS = [
-    (16384, 20480),  # Full budget
-    (8192, 12288),   # Medium budget
-    (4096, 8192),    # Small budget
+    (16384, 20480),
+    (8192, 12288),
+    (4096, 8192),
 ]
 
-# Non-thinking ablation configurations (max_tokens only)
 NON_THINKING_ABLATION_CONFIGS = [
-    20480,  # Full budget
-    12288,  # Medium budget
-    8192,   # Small budget
+    20480,
+    12288,
+    8192,
 ]
 
-# Default configuration
 DEFAULT_THINKING_BUDGET = 16384
 DEFAULT_MAX_TOKENS = 20480
 
-# Batch processing configuration
-# Anthropic API rate limits (Requests Per Minute):
-# - Tier 1: 50 RPM
-# - Tier 2: 1,000 RPM  
-# - Tier 3: 2,000 RPM
-# - Tier 4: 4,000 RPM
-# 
-# For Tier 1 (50 RPM), we use 5 concurrent requests to stay well under the limit
-# (5 concurrent * ~2-3 seconds per request = ~10-15 requests/min)
-#
-# Adjust BATCH_SIZE based on your tier:
-# - Tier 1: 5-10 concurrent
-# - Tier 2: 50-100 concurrent
-# - Tier 3: 100-200 concurrent
-# - Tier 4: 200-400 concurrent
-BATCH_SIZE = 5  # Conservative default for Tier 1
-MAX_CONCURRENT_REQUESTS = 5  # Semaphore limit to control concurrency
+# Concurrency tuned for Anthropic Tier 1 (50 RPM). Increase for higher tiers.
+BATCH_SIZE = 5
+MAX_CONCURRENT_REQUESTS = 5
 
-# Sampling parameters - using Claude's defaults
-# Extended thinking automatically uses temperature=1.0
-# Non-thinking mode uses Claude's default temperature
+# Claude defaults; extended thinking forces temperature=1.0
 THINKING_PARAMS = {}
 
 NON_THINKING_PARAMS = {}
 
-# ============================================================================
-# Data Loading Functions
-# ============================================================================
+# --- Data Loading ---
 
 def load_bee_data(filename):
-    """Load puzzle data from JSON file"""
     with open(filename, 'r') as f:
         return json.load(f)
 
 
 def get_all_puzzle_dates(start_date, end_date):
-    """Generate list of dates between start and end (inclusive)"""
     start = datetime.strptime(start_date, "%Y%m%d")
     end = datetime.strptime(end_date, "%Y%m%d")
     
@@ -120,28 +73,24 @@ def get_all_puzzle_dates(start_date, end_date):
 
 
 def extract_puzzle_letters(words):
-    """Extract unique letters from word list"""
     if not words:
         return set()
     return set(''.join(words).lower())
 
 
 def identify_center_letter(words):
-    """Identify the mandatory center letter (appears in all words)"""
+    """Find the letter present in every word; fall back to most frequent."""
     if not words:
         return None
     
-    # Start with letters from first word
     candidate_letters = set(words[0].lower())
-    
-    # Keep only letters that appear in ALL words
+
     for word in words[1:]:
         candidate_letters &= set(word.lower())
     
     if len(candidate_letters) == 1:
         return list(candidate_letters)[0]
     
-    # Fallback: most frequent letter
     letter_counts = {}
     for word in words:
         for letter in set(word.lower()):
@@ -153,12 +102,9 @@ def identify_center_letter(words):
     return None
 
 
-# ============================================================================
-# Word Validation Functions
-# ============================================================================
+# --- Word Validation ---
 
 def is_valid_bee_word(word, center_letter, allowed_letters):
-    """Check if word satisfies puzzle constraints"""
     word = word.strip().lower()
     return (word
             and word.isalpha()
@@ -168,7 +114,6 @@ def is_valid_bee_word(word, center_letter, allowed_letters):
 
 
 def parse_word_predictions(generated_text, center_letter, allowed_letters):
-    """Parse model output and extract ALL valid words"""
     lines = generated_text.strip().split('\n')
     
     valid_words = []
@@ -180,20 +125,17 @@ def parse_word_predictions(generated_text, center_letter, allowed_letters):
         if not word:
             continue
         
-        # Handle comma-separated words
         if ',' in word:
             word_candidates = [w.strip() for w in word.split(',')]
         else:
             word_candidates = [word]
         
         for candidate in word_candidates:
-            # Keep only alphabetic characters
             candidate = ''.join(c for c in candidate if c.isalpha())
             
             if not candidate:
                 continue
             
-            # Validate and deduplicate
             if is_valid_bee_word(candidate, center_letter, allowed_letters):
                 if candidate not in seen:
                     seen.add(candidate)
@@ -202,12 +144,9 @@ def parse_word_predictions(generated_text, center_letter, allowed_letters):
     return valid_words
 
 
-# ============================================================================
-# Prompt Creation
-# ============================================================================
+# --- Prompt Creation ---
 
 def create_word_prediction_prompt(center_letter, outer_letters):
-    """Create prompt for word generation task"""
     all_letters = sorted([center_letter] + outer_letters)
     
     letters_display = ', '.join(all_letters).upper()
@@ -250,15 +189,11 @@ After your thinking, provide ONLY a clean list of valid words.
 Start your word list now:"""
 
 
-# ============================================================================
-# Claude API Integration
-# ============================================================================
+# --- Claude API Integration ---
 
 class ClaudeGenerator:
-    """Handles Claude API calls with thinking mode support"""
-    
+
     def __init__(self, api_key=None):
-        """Initialize Claude client"""
         if api_key is None:
             api_key = os.getenv('ANTHROPIC_API_KEY')
         
@@ -272,65 +207,44 @@ class ClaudeGenerator:
         self.model = CLAUDE_MODEL
     
     def generate(self, prompt, enable_thinking=False, thinking_budget=None, max_tokens=None):
-        """
-        Generate response from Claude with optional extended thinking.
-        
-        Args:
-            prompt: Input prompt text
-            enable_thinking: Whether to enable extended thinking mode
-            thinking_budget: Token budget for thinking (only used if enable_thinking=True)
-            max_tokens: Overall max tokens for generation
-        
-        Returns:
-            tuple: (answer_text, generation_metadata)
-        """
-        # Set defaults
+        """Returns (answer_text, generation_metadata)."""
         if thinking_budget is None:
             thinking_budget = DEFAULT_THINKING_BUDGET
         if max_tokens is None:
             max_tokens = DEFAULT_MAX_TOKENS
         
-        # Select parameters based on thinking mode
         params = THINKING_PARAMS.copy() if enable_thinking else NON_THINKING_PARAMS.copy()
-        
-        # Prepare messages
+
         messages = [
             {"role": "user", "content": prompt}
         ]
-        
-        # Time the generation
+
         start_time = time.time()
-        
+
         try:
-            # Build API call parameters
             api_params = {
                 'model': self.model,
                 'max_tokens': max_tokens,
                 'messages': messages,
             }
             
-            # Add temperature if specified
             if 'temperature' in params:
                 api_params['temperature'] = params['temperature']
-            
-            # Add extended thinking if enabled
+
             if enable_thinking:
                 api_params['thinking'] = {
                     'type': 'enabled', 
                     'budget_tokens': thinking_budget
                 }
             
-            # Call Claude API
             response = self.client.messages.create(**api_params)
-            
+
             generation_time = time.time() - start_time
-            
-            # Extract response content
+
             raw_output = self._extract_content(response)
             thinking_trace = self._extract_thinking(response) if enable_thinking else ""
             answer_text = self._extract_answer_text(response)
             
-            # Build metadata
             metadata = {
                 'raw_output': raw_output,
                 'thinking_trace': thinking_trace if enable_thinking else "",
@@ -345,35 +259,29 @@ class ClaudeGenerator:
                 'thinking_budget': thinking_budget if enable_thinking else None,
                 'max_tokens': max_tokens
             }
-            
+
             return answer_text, metadata
-            
+
         except Exception as e:
             print(f"\n[ERROR] Error calling Claude API: {e}")
             raise
-    
+
     def _extract_content(self, response):
-        """Extract full content from Claude response (all text blocks combined)"""
         if not response.content:
             return ""
-        
-        # Combine all content blocks into raw output
+
         parts = []
         for block in response.content:
             if block.type == 'thinking':
-                # Thinking blocks have a 'thinking' attribute
                 parts.append(f"<think>{block.thinking}</think>")
             elif block.type == 'text':
-                # Text blocks have a 'text' attribute
                 parts.append(block.text)
             elif block.type == 'redacted_thinking':
-                # Redacted thinking blocks (encrypted)
                 parts.append("<redacted_thinking>")
         
         return '\n'.join(parts)
     
     def _extract_thinking(self, response):
-        """Extract thinking trace from thinking blocks"""
         if not response.content:
             return ""
         
@@ -385,7 +293,6 @@ class ClaudeGenerator:
         return '\n'.join(thinking_parts)
     
     def _extract_answer_text(self, response):
-        """Extract only the text blocks (final answer)"""
         if not response.content:
             return ""
         
@@ -398,10 +305,9 @@ class ClaudeGenerator:
 
 
 class AsyncClaudeGenerator:
-    """Async version of ClaudeGenerator for batch processing"""
-    
+    """Async ClaudeGenerator with semaphore-based rate limiting."""
+
     def __init__(self, api_key=None, max_concurrent=MAX_CONCURRENT_REQUESTS):
-        """Initialize async Claude client with rate limiting"""
         if api_key is None:
             api_key = os.getenv('ANTHROPIC_API_KEY')
         
@@ -416,71 +322,46 @@ class AsyncClaudeGenerator:
         self.semaphore = asyncio.Semaphore(max_concurrent)
     
     async def generate(self, prompt, enable_thinking=False, thinking_budget=None, max_tokens=None, max_retries=3):
-        """
-        Async generate response from Claude with optional extended thinking.
-        Includes exponential backoff retry logic for rate limits.
-        
-        Args:
-            prompt: Input prompt text
-            enable_thinking: Whether to enable extended thinking mode
-            thinking_budget: Token budget for thinking (only used if enable_thinking=True)
-            max_tokens: Overall max tokens for generation
-            max_retries: Maximum number of retries for rate limit errors
-        
-        Returns:
-            tuple: (answer_text, generation_metadata)
-        """
-        # Set defaults
+        """Returns (answer_text, metadata) with exponential backoff on rate limits."""
         if thinking_budget is None:
             thinking_budget = DEFAULT_THINKING_BUDGET
         if max_tokens is None:
             max_tokens = DEFAULT_MAX_TOKENS
         
-        # Select parameters based on thinking mode
         params = THINKING_PARAMS.copy() if enable_thinking else NON_THINKING_PARAMS.copy()
-        
-        # Prepare messages
+
         messages = [
             {"role": "user", "content": prompt}
         ]
-        
-        # Use semaphore to limit concurrent requests
+
         async with self.semaphore:
-            # Retry loop with exponential backoff
             for attempt in range(max_retries):
-                # Time the generation
                 start_time = time.time()
-                
+
                 try:
-                    # Build API call parameters
                     api_params = {
                         'model': self.model,
                         'max_tokens': max_tokens,
                         'messages': messages,
                     }
                     
-                    # Add temperature if specified
                     if 'temperature' in params:
                         api_params['temperature'] = params['temperature']
-                    
-                    # Add extended thinking if enabled
+
                     if enable_thinking:
                         api_params['thinking'] = {
                             'type': 'enabled', 
                             'budget_tokens': thinking_budget
                         }
                     
-                    # Call Claude API asynchronously
                     response = await self.client.messages.create(**api_params)
-                    
+
                     generation_time = time.time() - start_time
-                    
-                    # Extract response content
+
                     raw_output = self._extract_content(response)
                     thinking_trace = self._extract_thinking(response) if enable_thinking else ""
                     answer_text = self._extract_answer_text(response)
                     
-                    # Build metadata
                     metadata = {
                         'raw_output': raw_output,
                         'thinking_trace': thinking_trace if enable_thinking else "",
@@ -496,11 +377,10 @@ class AsyncClaudeGenerator:
                         'max_tokens': max_tokens,
                         'retry_attempt': attempt
                     }
-                    
+
                     return answer_text, metadata
-                    
+
                 except RateLimitError as e:
-                    # Rate limit hit - exponential backoff
                     if attempt < max_retries - 1:
                         wait_time = (2 ** attempt) * 2  # 2, 4, 8 seconds
                         print(f"\n[WARN] Rate limit hit, waiting {wait_time}s before retry {attempt + 1}/{max_retries}...")
@@ -512,13 +392,11 @@ class AsyncClaudeGenerator:
                 except Exception as e:
                     print(f"\n[ERROR] Error calling Claude API: {e}")
                     raise
-    
+
     def _extract_content(self, response):
-        """Extract full content from Claude response (all text blocks combined)"""
         if not response.content:
             return ""
         
-        # Combine all content blocks into raw output
         parts = []
         for block in response.content:
             if block.type == 'thinking':
@@ -531,7 +409,6 @@ class AsyncClaudeGenerator:
         return '\n'.join(parts)
     
     def _extract_thinking(self, response):
-        """Extract thinking trace from thinking blocks"""
         if not response.content:
             return ""
         
@@ -543,7 +420,6 @@ class AsyncClaudeGenerator:
         return '\n'.join(thinking_parts)
     
     def _extract_answer_text(self, response):
-        """Extract only the text blocks (final answer)"""
         if not response.content:
             return ""
         
@@ -555,12 +431,9 @@ class AsyncClaudeGenerator:
         return '\n'.join(text_parts)
 
 
-# ============================================================================
-# File Saving Functions
-# ============================================================================
+# --- File Storage ---
 
 def save_structured_logs(logs_data, enable_thinking, thinking_budget, max_tokens, output_dir):
-    """Save structured logs with complete generation details"""
     os.makedirs(output_dir, exist_ok=True)
     
     if enable_thinking:
@@ -581,7 +454,6 @@ def save_structured_logs(logs_data, enable_thinking, thinking_budget, max_tokens
 
 
 def save_results(results_data, enable_thinking, thinking_budget, max_tokens, output_dir):
-    """Save results with predictions vs ground truth"""
     os.makedirs(output_dir, exist_ok=True)
     
     if enable_thinking:
@@ -601,23 +473,10 @@ def save_results(results_data, enable_thinking, thinking_budget, max_tokens, out
     return filepath
 
 
-# ============================================================================
-# Main Inference Pipeline
-# ============================================================================
+# --- Main Inference Pipeline ---
 
 def run_claude_inference(enable_thinking=False, thinking_budget=None, max_tokens=None):
-    """
-    Run inference on all 58 puzzles with Claude 4.5 haiku.
-    
-    Args:
-        enable_thinking: Whether to enable extended thinking mode
-        thinking_budget: Token budget for thinking (default: DEFAULT_THINKING_BUDGET)
-        max_tokens: Overall max tokens (default: DEFAULT_MAX_TOKENS)
-    
-    Returns:
-        tuple: (logs_filepath, results_filepath)
-    """
-    # Set defaults
+    """Sequential inference on all 58 puzzles. Returns (logs_path, results_path)."""
     if thinking_budget is None:
         thinking_budget = DEFAULT_THINKING_BUDGET
     if max_tokens is None:
@@ -634,18 +493,13 @@ def run_claude_inference(enable_thinking=False, thinking_budget=None, max_tokens
     print(f"Date range: {START_DATE} to {END_DATE}")
     print("="*80)
     
-    # Initialize Claude generator
     generator = ClaudeGenerator()
-    
-    # Get all puzzle dates
     all_dates = get_all_puzzle_dates(START_DATE, END_DATE)
     print(f"\nProcessing {len(all_dates)} puzzles sequentially...")
     
-    # Initialize storage
     logs_puzzles = []
     results_predictions = []
-    
-    # Process each puzzle
+
     for date in tqdm(all_dates, desc="Processing puzzles"):
         filename = f"bee_{date}.json"
         filepath = os.path.join(BEE_DATA_PATH, filename)
@@ -656,7 +510,6 @@ def run_claude_inference(enable_thinking=False, thinking_budget=None, max_tokens
             print(f"\nWarning: {filename} not found, skipping...")
             continue
         
-        # Extract puzzle info
         actual_words = list(puzzle_data['answers'].keys())
         all_letters = extract_puzzle_letters(actual_words)
         center_letter = identify_center_letter(actual_words)
@@ -677,19 +530,16 @@ def run_claude_inference(enable_thinking=False, thinking_budget=None, max_tokens
             print(f"\nError generating for {filename}: {e}")
             continue
         
-        # Parse predicted words
         predicted_words = parse_word_predictions(
             answer_text, center_letter, all_letters
         )
         
-        # Compute set operations
         predicted_set = set(predicted_words)
         actual_set = set(actual_words)
         correctly_predicted = sorted(predicted_set & actual_set)
         missed_words = sorted(actual_set - predicted_set)
         false_positives = sorted(predicted_set - actual_set)
-        
-        # Store log entry (verbose, complete generation details)
+
         log_entry = {
             'puzzle_id': puzzle_data['id'],
             'date': date,
@@ -700,7 +550,6 @@ def run_claude_inference(enable_thinking=False, thinking_budget=None, max_tokens
         }
         logs_puzzles.append(log_entry)
         
-        # Store results entry (lean, predictions vs ground truth)
         result_entry = {
             'puzzle_id': puzzle_data['id'],
             'date': date,
@@ -714,7 +563,6 @@ def run_claude_inference(enable_thinking=False, thinking_budget=None, max_tokens
         }
         results_predictions.append(result_entry)
     
-    # Build metadata
     metadata = {
         'model_name': CLAUDE_MODEL,
         'model_family': 'claude',
@@ -731,14 +579,12 @@ def run_claude_inference(enable_thinking=False, thinking_budget=None, max_tokens
         'generated_at': datetime.now().isoformat()
     }
     
-    # Save structured logs
     logs_data = {
         'metadata': metadata,
         'puzzles': logs_puzzles
     }
     logs_filepath = save_structured_logs(logs_data, enable_thinking, thinking_budget, max_tokens, LOG_PATH)
     
-    # Save results
     results_data = {
         'metadata': metadata,
         'predictions': results_predictions
@@ -756,20 +602,7 @@ def run_claude_inference(enable_thinking=False, thinking_budget=None, max_tokens
 
 
 async def run_claude_inference_batched(enable_thinking=False, thinking_budget=None, max_tokens=None, batch_size=BATCH_SIZE):
-    """
-    Run inference on all puzzles with Claude 4.5 haiku using BATCHED async processing.
-    This is much faster than sequential processing.
-    
-    Args:
-        enable_thinking: Whether to enable extended thinking mode
-        thinking_budget: Token budget for thinking (default: DEFAULT_THINKING_BUDGET)
-        max_tokens: Overall max tokens (default: DEFAULT_MAX_TOKENS)
-        batch_size: Number of puzzles to process concurrently (default: BATCH_SIZE)
-    
-    Returns:
-        tuple: (logs_filepath, results_filepath)
-    """
-    # Set defaults
+    """Async batched inference. Returns (logs_path, results_path)."""
     if thinking_budget is None:
         thinking_budget = DEFAULT_THINKING_BUDGET
     if max_tokens is None:
@@ -787,17 +620,11 @@ async def run_claude_inference_batched(enable_thinking=False, thinking_budget=No
     print(f"Date range: {START_DATE} to {END_DATE}")
     print("="*80)
     
-    # Initialize async Claude generator
     generator = AsyncClaudeGenerator(max_concurrent=batch_size)
-    
-    # Get all puzzle dates
     all_dates = get_all_puzzle_dates(START_DATE, END_DATE)
     print(f"\nProcessing {len(all_dates)} puzzles in batches of {batch_size}...")
     
-    # ========================================================================
-    # STEP 1: Build all prompts and collect puzzle metadata
-    # ========================================================================
-    puzzle_tasks = []  # List of (date, filepath, puzzle_data, prompt)
+    puzzle_tasks = []
     
     for date in all_dates:
         filename = f"bee_{date}.json"
@@ -809,7 +636,6 @@ async def run_claude_inference_batched(enable_thinking=False, thinking_budget=No
             print(f"\nWarning: {filename} not found, skipping...")
             continue
         
-        # Extract puzzle info
         actual_words = list(puzzle_data['answers'].keys())
         all_letters = extract_puzzle_letters(actual_words)
         center_letter = identify_center_letter(actual_words)
@@ -826,25 +652,18 @@ async def run_claude_inference_batched(enable_thinking=False, thinking_budget=No
     
     print(f"[OK] Built {len(puzzle_tasks)} prompts")
     
-    # ========================================================================
-    # STEP 2: Process all puzzles in batches
-    # ========================================================================
     async def process_puzzle(task):
-        """Process a single puzzle"""
         date, puzzle_data, center_letter, all_letters, prompt = task
         
         try:
-            # Generate with Claude
             answer_text, metadata = await generator.generate(
                 prompt, enable_thinking, thinking_budget, max_tokens
             )
             
-            # Parse predicted words
             predicted_words = parse_word_predictions(
                 answer_text, center_letter, all_letters
             )
-            
-            # Compute set operations
+
             actual_words = list(puzzle_data['answers'].keys())
             predicted_set = set(predicted_words)
             actual_set = set(actual_words)
@@ -852,7 +671,6 @@ async def run_claude_inference_batched(enable_thinking=False, thinking_budget=No
             missed_words = sorted(actual_set - predicted_set)
             false_positives = sorted(predicted_set - actual_set)
             
-            # Return both log and result entries
             return {
                 'success': True,
                 'log_entry': {
@@ -879,14 +697,12 @@ async def run_claude_inference_batched(enable_thinking=False, thinking_budget=No
             print(f"\n[ERROR] Error processing puzzle {date}: {e}")
             return {'success': False, 'date': date, 'error': str(e)}
     
-    # Process all puzzles with progress bar
     results = []
     for i in async_tqdm(range(0, len(puzzle_tasks), batch_size), desc="Processing batches"):
         batch = puzzle_tasks[i:i+batch_size]
         batch_results = await asyncio.gather(*[process_puzzle(task) for task in batch])
         results.extend(batch_results)
     
-    # Separate successful results from failures
     logs_puzzles = []
     results_predictions = []
     failed_count = 0
@@ -902,7 +718,6 @@ async def run_claude_inference_batched(enable_thinking=False, thinking_budget=No
     if failed_count > 0:
         print(f"\n[WARN] {failed_count} puzzles failed to process")
     
-    # Build metadata
     metadata = {
         'model_name': CLAUDE_MODEL,
         'model_family': 'claude',
@@ -920,14 +735,12 @@ async def run_claude_inference_batched(enable_thinking=False, thinking_budget=No
         'generated_at': datetime.now().isoformat()
     }
     
-    # Save structured logs
     logs_data = {
         'metadata': metadata,
         'puzzles': logs_puzzles
     }
     logs_filepath = save_structured_logs(logs_data, enable_thinking, thinking_budget, max_tokens, LOG_PATH)
     
-    # Save results
     results_data = {
         'metadata': metadata,
         'predictions': results_predictions
@@ -944,49 +757,22 @@ async def run_claude_inference_batched(enable_thinking=False, thinking_budget=No
     return logs_filepath, results_filepath
 
 
-# ============================================================================
-# Run All Configurations
-# ============================================================================
+# --- Run All Configurations ---
 
 def run_claude_inference_wrapper(enable_thinking=False, thinking_budget=None, max_tokens=None, use_batching=True, batch_size=BATCH_SIZE):
-    """
-    Wrapper to run either sequential or batched inference.
-    
-    Args:
-        enable_thinking: Whether to enable extended thinking mode
-        thinking_budget: Token budget for thinking
-        max_tokens: Overall max tokens
-        use_batching: If True, use batched async processing (much faster)
-        batch_size: Batch size for concurrent processing
-    
-    Returns:
-        tuple: (logs_filepath, results_filepath)
-    """
+    """Dispatch to sequential or batched inference."""
     if use_batching:
-        # Run batched async inference
         return asyncio.run(run_claude_inference_batched(
             enable_thinking, thinking_budget, max_tokens, batch_size
         ))
     else:
-        # Run sequential inference
         return run_claude_inference(
             enable_thinking, thinking_budget, max_tokens
         )
 
 
 def run_all_claude_experiments(run_ablations=True, use_batching=True, batch_size=BATCH_SIZE):
-    """
-    Run all experiment configurations: non-thinking + thinking, each with ablations.
-    
-    Args:
-        run_ablations: If True, run all ablation budgets for both modes
-                      If False, only run default budgets (2 total)
-        use_batching: If True, use batched async processing (10x faster!)
-        batch_size: Batch size for concurrent processing
-    
-    Returns:
-        dict: Summary of all runs
-    """
+    """Run non-thinking + thinking configs, optionally with budget ablations."""
     print("\n" + "="*80)
     print("RUNNING ALL CLAUDE EXPERIMENTS")
     if use_batching:
@@ -996,11 +782,9 @@ def run_all_claude_experiments(run_ablations=True, use_batching=True, batch_size
     if use_batching:
         print(f"Batch size: {batch_size} concurrent requests")
     
-    # Build configuration list
     configurations = []
-    
+
     if run_ablations:
-        # Non-thinking mode with ablations (3 different max_tokens)
         for max_tokens in NON_THINKING_ABLATION_CONFIGS:
             configurations.append({
                 'enable_thinking': False,
@@ -1009,7 +793,6 @@ def run_all_claude_experiments(run_ablations=True, use_batching=True, batch_size
                 'name': f'Non-Thinking (max={max_tokens})'
             })
         
-        # Thinking mode with ablations (3 different budgets)
         for thinking_budget, max_tokens in ABLATION_CONFIGS:
             configurations.append({
                 'enable_thinking': True,
@@ -1020,7 +803,6 @@ def run_all_claude_experiments(run_ablations=True, use_batching=True, batch_size
         
         total_configs = 6  # 3 non-thinking + 3 thinking budgets
     else:
-        # Run only default budgets
         configurations.append({
             'enable_thinking': False,
             'thinking_budget': None,
@@ -1046,7 +828,6 @@ def run_all_claude_experiments(run_ablations=True, use_batching=True, batch_size
     all_results = []
     start_time = time.time()
     
-    # Run each configuration
     for config_idx, config in enumerate(configurations, 1):
         print(f"\n{'='*80}")
         print(f"CONFIGURATION {config_idx}/{total_configs}: {config['name']}")
@@ -1092,7 +873,6 @@ def run_all_claude_experiments(run_ablations=True, use_batching=True, batch_size
             
             traceback.print_exc()
     
-    # Final summary
     total_time = time.time() - start_time
     hours = int(total_time // 3600)
     minutes = int((total_time % 3600) // 60)
@@ -1110,7 +890,6 @@ def run_all_claude_experiments(run_ablations=True, use_batching=True, batch_size
     print(f"Total time: {hours}h {minutes}m {seconds}s")
     print("="*80)
     
-    # Print detailed results
     print("\nDETAILED RESULTS:")
     print("-" * 80)
     for i, result in enumerate(all_results, 1):
@@ -1122,7 +901,6 @@ def run_all_claude_experiments(run_ablations=True, use_batching=True, batch_size
             print(f"     Results: {result['results_path']}")
     print("-" * 80)
     
-    # Save summary
     summary_path = os.path.join(RESULTS_PATH, 'claude_experiment_summary.json')
     os.makedirs(RESULTS_PATH, exist_ok=True)
     
@@ -1150,9 +928,7 @@ def run_all_claude_experiments(run_ablations=True, use_batching=True, batch_size
     return summary
 
 
-# ============================================================================
-# MAIN ENTRY POINT
-# ============================================================================
+# --- Main ---
 
 if __name__ == "__main__":
     print("\n" + "="*80)
@@ -1171,7 +947,6 @@ if __name__ == "__main__":
     print("\nRunning THINKING experiments ONLY (3 configurations, sequential)...")
     print("="*80)
     
-    # Run only thinking experiments sequentially (no batching)
     all_results = []
     start_time = time.time()
     
@@ -1218,7 +993,6 @@ if __name__ == "__main__":
             
             traceback.print_exc()
     
-    # Final summary
     total_time = time.time() - start_time
     hours = int(total_time // 3600)
     minutes = int((total_time % 3600) // 60)
@@ -1236,7 +1010,6 @@ if __name__ == "__main__":
     print(f"Total time: {hours}h {minutes}m {seconds}s")
     print("="*80)
     
-    # Print detailed results
     print("\nDETAILED RESULTS:")
     print("-" * 80)
     for i, result in enumerate(all_results, 1):

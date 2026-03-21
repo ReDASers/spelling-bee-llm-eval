@@ -1,9 +1,4 @@
-"""
-Metrics package for Spelling Bee LLM Evaluation.
-
-Provides comprehensive metrics computation, aggregation, statistical analysis,
-and reporting for the NYT Spelling Bee task evaluation.
-"""
+"""Metrics package for Spelling Bee LLM evaluation."""
 
 from metrics.config import (
     MODEL_SIZES, THINKING_MODES, DIFFICULTY_THRESHOLDS,

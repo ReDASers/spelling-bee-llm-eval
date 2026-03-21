@@ -1,20 +1,4 @@
-"""
-Compute Comprehensive Metrics for Spelling Bee Experiments
-===========================================================
-Reads results files from run_inference.py and computes improved metrics based
-on expert panel recommendations.
-
-Key Improvements:
-- Difficulty-weighted recall (accounts for word length)
-- Length distribution coverage (per-length category recall)
-- Consistency metrics (CV, percentiles, success rates)
-- Word length vs. difficulty correlation
-- Prefix diversity analysis
-- Removed: CAR (non-discriminative), letter scarcity (hypothesis falsified)
-
-Usage:
-    python compute_metrics.py --results-dir data/qwen-results --output-dir metrics/output/
-"""
+"""Compute metrics from Spelling Bee inference results using the metrics package."""
 
 import os
 import argparse
@@ -50,11 +34,9 @@ def main():
     print(f"Results directory: {args.results_dir}")
     print(f"Output directory: {args.output_dir}")
 
-    # Load all results from multiple directories (Qwen, Claude, GPT-5)
     print("\nLoading results...")
     additional_dirs = []
 
-    # Check for Claude and GPT-5 results directories relative to script location
     script_dir = os.path.dirname(os.path.abspath(__file__))
     for subdir in ['data/claude-results', 'data/openai-results']:
         candidate = os.path.join(script_dir, subdir)
@@ -63,18 +45,15 @@ def main():
 
     df = load_all_results(args.results_dir, additional_dirs=additional_dirs if additional_dirs else None)
 
-    # Load word difficulty data from NYT user success rates
     print("\nLoading word difficulty data...")
     difficulty_data = load_word_difficulty_data(args.difficulty_dir)
 
     if difficulty_data:
-        # Check coverage
         puzzles_with_difficulty = set(difficulty_data.keys())
         puzzles_in_results = set(df['puzzle_id'].unique())
         coverage = len(puzzles_with_difficulty & puzzles_in_results)
         print(f"  - Difficulty data available for {coverage}/{len(puzzles_in_results)} puzzles ({coverage/len(puzzles_in_results)*100:.1f}%)")
 
-        # Add difficulty source column
         df['difficulty_source'] = df['puzzle_id'].apply(
             lambda pid: 'user_data' if pid in puzzles_with_difficulty else 'length_estimate'
         )
@@ -82,36 +61,24 @@ def main():
         print("  - No difficulty data found, using length-based estimates")
         df['difficulty_source'] = 'length_estimate'
 
-    # Compute per-puzzle metrics
     print("\nComputing per-puzzle metrics...")
-    print("  - Precision, Recall, F1")
-    print("  - Constraint Adherence Rate (CAR)")
-    print("  - Pangram detection and recall")
-    print("  - Difficulty-weighted recall (using real user success rates when available)")
-    print("  - Letter scarcity analysis")
-    print("  - False positive categorization")
     df = add_metrics_to_dataframe(df, difficulty_data)
 
-    # Aggregate statistics
     print("\nAggregating statistics by configuration...")
     agg_df = aggregate_by_configuration(df)
 
-    # Compute statistical significance
     print("Computing statistical significance (paired t-tests)...")
     sig_df = compute_statistical_significance(df)
 
-    # Stratifications
     print("Stratifying by puzzle difficulty...")
     difficulty_df = stratify_by_difficulty(df)
 
     print("Stratifying by word length...")
     length_df = stratify_by_word_length(df)
 
-    # Word length vs. difficulty correlation analysis
     print("Computing word length vs. difficulty correlation...")
     length_stats = compute_word_length_correlation(df)
 
-    # Additional analyses for new tables
     print("Computing difficulty gap analysis...")
     difficulty_gap_df = compute_difficulty_gap_analysis(difficulty_df)
 
@@ -121,7 +88,6 @@ def main():
     print("Computing scaling pattern analysis...")
     scaling_pattern_df = compute_scaling_pattern_analysis(agg_df)
 
-    # Thinking budget analyses
     print("Computing thinking budget effects...")
     budget_effects_df = compute_thinking_budget_effects(agg_df)
 
@@ -131,11 +97,9 @@ def main():
     print("Computing optimal budget recommendations...")
     optimal_budget = compute_optimal_budget_analysis(agg_df)
 
-    # Volume-performance analysis
     print("Computing volume-performance relationship...")
     volume_analysis = compute_volume_performance_analysis(df)
 
-    # Word-level difficulty analyses (leveraging NYT user data)
     print("Computing word-level difficulty stratification...")
     word_difficulty_strat_df = compute_word_level_difficulty_stratification(df, difficulty_data)
 
@@ -148,12 +112,10 @@ def main():
     print("Computing inter-model agreement...")
     inter_model_agreement_df = compute_inter_model_agreement(df)
 
-    # Print comprehensive summary
     print_summary(agg_df, sig_df, length_stats, budget_effects_df, budget_interaction_df,
                   optimal_budget, volume_analysis, word_difficulty_strat_df,
                   model_human_calibration, failure_mode_analysis, inter_model_agreement_df)
 
-    # Save all results
     print("\nSaving results...")
     save_results(df, agg_df, sig_df, difficulty_df, length_df, length_stats,
                  difficulty_gap_df, thinking_consistency_df, scaling_pattern_df,

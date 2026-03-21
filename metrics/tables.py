@@ -1,15 +1,4 @@
-"""
-LaTeX Table Generation for Spelling Bee Metrics
-================================================
-Generates publication-ready LaTeX tables from computed metrics.
-
-Tables:
-1. Model Scaling Effects (with Consistency Metrics)
-2. Thinking Mode Comparison
-3. Word Length vs. Difficulty
-4. Word Length Coverage Distribution
-5. Pangram Performance
-"""
+"""Publication-ready LaTeX table generation from computed metrics."""
 
 import numpy as np
 import pandas as pd
@@ -17,10 +6,9 @@ from typing import Dict
 
 
 def generate_latex_table_scaling(agg_df: pd.DataFrame) -> str:
-    """Generate LaTeX table for model scaling (thinking mode ON) with consistency metrics"""
+    """Table: model scaling effects (thinking ON) with consistency metrics."""
     thinking_df = agg_df[agg_df['thinking'] == True].copy()
-    
-    # Check if budget information is available
+
     has_budget = 'thinking_budget' in thinking_df.columns and thinking_df['thinking_budget'].notna().any()
     
     lines = []
@@ -85,7 +73,7 @@ def generate_latex_table_scaling(agg_df: pd.DataFrame) -> str:
 
 
 def generate_latex_table_thinking(sig_df: pd.DataFrame) -> str:
-    """Generate LaTeX table comparing thinking ON vs OFF with statistical significance"""
+    """Table: thinking mode ON vs OFF with statistical significance."""
     lines = []
     lines.append(r"\begin{table}[t]")
     lines.append(r"\centering")
@@ -109,7 +97,6 @@ def generate_latex_table_thinking(sig_df: pd.DataFrame) -> str:
         sign_r = "+" if delta_r >= 0 else ""
         sign_f1 = "+" if delta_f1 >= 0 else ""
         
-        # Format p-value
         if p_val < 0.001:
             p_str = "$p < 0.001$"
         elif p_val < 0.01:
@@ -135,7 +122,7 @@ def generate_latex_table_thinking(sig_df: pd.DataFrame) -> str:
 
 
 def generate_latex_table_length_correlation(length_stats: Dict) -> str:
-    """Generate LaTeX table for word length vs. difficulty correlation"""
+    """Table: word length vs. difficulty correlation."""
     lines = []
     lines.append(r"\begin{table}[t]")
     lines.append(r"\centering")
@@ -173,7 +160,7 @@ def generate_latex_table_length_correlation(length_stats: Dict) -> str:
 
 
 def generate_latex_table_length_coverage(agg_df: pd.DataFrame) -> str:
-    """Generate LaTeX table for word length coverage distribution"""
+    """Table: recall by word length category."""
     thinking_df = agg_df[agg_df['thinking'] == True].copy()
     
     lines = []
@@ -206,7 +193,7 @@ def generate_latex_table_length_coverage(agg_df: pd.DataFrame) -> str:
 
 
 def generate_latex_table_pangrams(agg_df: pd.DataFrame) -> str:
-    """Generate LaTeX table for pangram performance (de-emphasized)"""
+    """Table: pangram generation performance."""
     lines = []
     lines.append(r"\begin{table}[t]")
     lines.append(r"\centering")
@@ -235,7 +222,7 @@ def generate_latex_table_pangrams(agg_df: pd.DataFrame) -> str:
 
 
 def generate_latex_table_complete_comparison(agg_df: pd.DataFrame) -> str:
-    """Generate LaTeX table comparing ALL 8 configurations"""
+    """Table: complete comparison across all configurations."""
     lines = []
     lines.append(r"\begin{table}[t]")
     lines.append(r"\centering")
@@ -270,8 +257,7 @@ def generate_latex_table_complete_comparison(agg_df: pd.DataFrame) -> str:
 
 
 def generate_latex_table_difficulty_stratification(difficulty_df: pd.DataFrame, difficulty_gap_df: pd.DataFrame) -> str:
-    """Generate LaTeX table showing performance by puzzle difficulty"""
-    # Filter for thinking mode ON only
+    """Table: performance stratified by puzzle difficulty."""
     thinking_on = difficulty_df[difficulty_df['thinking'] == True].copy()
     gap_on = difficulty_gap_df[difficulty_gap_df['thinking'] == True].copy()
     
@@ -312,7 +298,7 @@ def generate_latex_table_difficulty_stratification(difficulty_df: pd.DataFrame, 
 
 
 def generate_latex_table_reliability_analysis(agg_df: pd.DataFrame) -> str:
-    """Generate LaTeX table for reliability and worst-case analysis"""
+    """Table: reliability and worst-case analysis."""
     thinking_df = agg_df[agg_df['thinking'] == True].copy()
     
     lines = []
@@ -346,7 +332,7 @@ def generate_latex_table_reliability_analysis(agg_df: pd.DataFrame) -> str:
 
 
 def generate_latex_table_error_distribution(agg_df: pd.DataFrame) -> str:
-    """Generate LaTeX table for error type distribution"""
+    """Table: error type distribution (constraint violations vs non-dictionary)."""
     lines = []
     lines.append(r"\begin{table}[t]")
     lines.append(r"\centering")
@@ -362,8 +348,8 @@ def generate_latex_table_error_distribution(agg_df: pd.DataFrame) -> str:
         model = row['model_size'].upper()
         thinking = "ON " if row['thinking'] else "OFF"
         fp_mean = row.get('fp_non_dictionary_mean', 0)
-        constraint_pct = 0  # Always 0 due to parser filtering
-        non_dict_pct = 100  # Always 100%
+        constraint_pct = 0   # parser pre-filters constraint violations
+        non_dict_pct = 100
         
         lines.append(
             f"{model:3} & {thinking} & {fp_mean:.1f} & {constraint_pct:.0f}\\% & {non_dict_pct:.0f}\\% \\\\"
@@ -377,7 +363,7 @@ def generate_latex_table_error_distribution(agg_df: pd.DataFrame) -> str:
 
 
 def generate_latex_table_weighted_vs_standard_recall(agg_df: pd.DataFrame) -> str:
-    """Generate LaTeX table comparing difficulty-weighted vs standard recall"""
+    """Table: difficulty-weighted vs standard recall."""
     thinking_df = agg_df[agg_df['thinking'] == True].copy()
     
     lines = []
@@ -409,7 +395,7 @@ def generate_latex_table_weighted_vs_standard_recall(agg_df: pd.DataFrame) -> st
 
 
 def generate_latex_table_thinking_consistency_effects(thinking_consistency_df: pd.DataFrame) -> str:
-    """Generate LaTeX table for thinking mode effects on consistency"""
+    """Table: thinking mode impact on consistency metrics."""
     lines = []
     lines.append(r"\begin{table}[t]")
     lines.append(r"\centering")
@@ -446,7 +432,7 @@ def generate_latex_table_thinking_consistency_effects(thinking_consistency_df: p
 
 
 def generate_latex_table_scaling_anomaly(scaling_pattern_df: pd.DataFrame) -> str:
-    """Generate LaTeX table highlighting scaling anomalies"""
+    """Table: scaling pattern with anomaly detection."""
     lines = []
     lines.append(r"\begin{table}[t]")
     lines.append(r"\centering")
@@ -460,8 +446,7 @@ def generate_latex_table_scaling_anomaly(scaling_pattern_df: pd.DataFrame) -> st
     
     for _, row in scaling_pattern_df.iterrows():
         comparison = row['comparison']
-        # Replace Unicode arrow with LaTeX command for better compatibility
-        comparison = comparison.replace('→', r'$\rightarrow$')
+        comparison = comparison.replace('\u2192', r'$\rightarrow$')
         
         delta_f1 = row['delta_f1']
         delta_recall = row['delta_recall'] * 100
@@ -484,7 +469,7 @@ def generate_latex_table_scaling_anomaly(scaling_pattern_df: pd.DataFrame) -> st
 
 
 def generate_latex_table_budget_effects(budget_effects_df: pd.DataFrame) -> str:
-    """Generate LaTeX table for thinking budget effects"""
+    """Table: thinking budget effects on performance."""
     if len(budget_effects_df) == 0:
         return "% No budget effects data available"
     
@@ -529,7 +514,7 @@ def generate_latex_table_budget_effects(budget_effects_df: pd.DataFrame) -> str:
 
 
 def generate_latex_table_budget_interaction(budget_interaction_df: pd.DataFrame) -> str:
-    """Generate LaTeX table for budget-model size interaction"""
+    """Table: budget sensitivity by model size."""
     if len(budget_interaction_df) == 0:
         return "% No budget interaction data available"
     
@@ -569,7 +554,7 @@ def generate_latex_table_budget_interaction(budget_interaction_df: pd.DataFrame)
 
 
 def generate_latex_table_optimal_budget(optimal_budget: Dict) -> str:
-    """Generate LaTeX table for optimal budget recommendations"""
+    """Table: optimal budget recommendations per model size."""
     if 'error' in optimal_budget or len(optimal_budget) == 0:
         return "% No optimal budget data available"
     
@@ -605,7 +590,7 @@ def generate_latex_table_optimal_budget(optimal_budget: Dict) -> str:
 
 
 def generate_latex_table_volume_analysis(agg_df: pd.DataFrame, volume_analysis: Dict) -> str:
-    """Generate LaTeX table for volume-performance relationship"""
+    """Table: generation volume and quality metrics."""
     if not volume_analysis or 'error' in volume_analysis:
         return "% No volume analysis data available"
     
@@ -620,10 +605,8 @@ def generate_latex_table_volume_analysis(agg_df: pd.DataFrame, volume_analysis: 
     lines.append(r"\textbf{Model} & \textbf{Volume} & \textbf{Precision} & \textbf{Recall} & \textbf{Efficiency} \\")
     lines.append(r"\midrule")
     
-    # Get thinking mode data with optimal budgets
     thinking_on = agg_df[agg_df['thinking'] == True].copy()
-    
-    # If budget available, select optimal per model
+
     if 'thinking_budget' in thinking_on.columns:
         thinking_on = thinking_on.sort_values('f1_mean', ascending=False).groupby('model_size').first().reset_index()
     
@@ -646,7 +629,7 @@ def generate_latex_table_volume_analysis(agg_df: pd.DataFrame, volume_analysis: 
 
 
 def generate_latex_table_word_difficulty_stratification(word_diff_df: pd.DataFrame) -> str:
-    """Generate LaTeX table for word-level difficulty stratification by human success rates"""
+    """Table: model recall by human difficulty quartile."""
     if len(word_diff_df) == 0:
         return "% No word difficulty stratification data available"
     
@@ -661,10 +644,8 @@ def generate_latex_table_word_difficulty_stratification(word_diff_df: pd.DataFra
     lines.append(r"\textbf{Model} & \textbf{Q1 (Very Easy)} & \textbf{Q2 (Easy)} & \textbf{Q3 (Hard)} & \textbf{Q4 (Very Hard)} \\")
     lines.append(r"\midrule")
     
-    # Filter for thinking mode ON
     thinking_df = word_diff_df[word_diff_df['thinking'] == True]
-    
-    # Average across budgets if present
+
     if 'thinking_budget' in thinking_df.columns:
         thinking_df = thinking_df.groupby(['model_size', 'difficulty_quartile'])['recall'].mean().reset_index()
     
@@ -693,7 +674,7 @@ def generate_latex_table_word_difficulty_stratification(word_diff_df: pd.DataFra
 
 
 def generate_latex_table_model_human_calibration(calibration: Dict) -> str:
-    """Generate LaTeX table for model-human calibration analysis"""
+    """Table: model-human calibration (Spearman correlation and MAE)."""
     if not calibration or 'error' in calibration:
         return "% No calibration data available"
     
@@ -708,7 +689,6 @@ def generate_latex_table_model_human_calibration(calibration: Dict) -> str:
     lines.append(r"\textbf{Model} & \textbf{Correlation} & \textbf{MAE} & \textbf{Words Analyzed} \\")
     lines.append(r"\midrule")
     
-    # Average calibration per model across budgets
     model_calibrations = {}
     for config_str, metrics in calibration.items():
         if metrics.get('thinking'):
@@ -737,7 +717,7 @@ def generate_latex_table_model_human_calibration(calibration: Dict) -> str:
 
 
 def generate_latex_table_failure_analysis(failure_analysis: Dict) -> str:
-    """Generate LaTeX table for failure mode analysis"""
+    """Table: systematic failures (easy-for-humans, hard-for-models)."""
     if not failure_analysis or 'error' in failure_analysis:
         return "% No failure analysis data available"
     
@@ -756,7 +736,7 @@ def generate_latex_table_failure_analysis(failure_analysis: Dict) -> str:
     lines.append(r"\textbf{Word} & \textbf{Length} & \textbf{Human Success} & \textbf{Model Miss Rate} \\")
     lines.append(r"\midrule")
     
-    for word_info in top_misses[:10]:  # Top 10
+    for word_info in top_misses[:10]:
         word = word_info['word']
         length = len(word)
         human_success = word_info['human_success_rate'] * 100
@@ -781,25 +761,7 @@ def generate_all_latex_tables(agg_df: pd.DataFrame, sig_df: pd.DataFrame, length
                               word_difficulty_strat_df: pd.DataFrame = None, 
                               model_human_calibration: Dict = None,
                               failure_mode_analysis: Dict = None) -> str:
-    """
-    Generate all LaTeX tables in a single formatted string.
-    
-    Args:
-        agg_df: Aggregated metrics DataFrame
-        sig_df: Statistical significance DataFrame
-        length_stats: Word length correlation statistics
-        difficulty_df: Difficulty stratification DataFrame
-        difficulty_gap_df: Difficulty gap analysis DataFrame
-        thinking_consistency_df: Thinking mode consistency effects DataFrame
-        scaling_pattern_df: Scaling pattern analysis DataFrame
-        budget_effects_df: Budget effects DataFrame (optional)
-        budget_interaction_df: Budget-model interaction DataFrame (optional)
-        optimal_budget: Optimal budget recommendations Dict (optional)
-        volume_analysis: Volume-performance analysis Dict (optional)
-    
-    Returns:
-        Formatted string with all tables ready for LaTeX document (12 base + up to 4 new tables)
-    """
+    """Combine all LaTeX tables into a single formatted string."""
     tables = []
     
     tables.append("% ==========================================================================")
@@ -858,7 +820,6 @@ def generate_all_latex_tables(agg_df: pd.DataFrame, sig_df: pd.DataFrame, length
     tables.append(generate_latex_table_scaling_anomaly(scaling_pattern_df))
     tables.append("")
     
-    # Add budget analysis tables if available
     if budget_effects_df is not None and len(budget_effects_df) > 0:
         tables.append("% ==========================================================================")
         tables.append("% THINKING BUDGET ANALYSIS TABLES (Tables 13-16)")
@@ -882,7 +843,6 @@ def generate_all_latex_tables(agg_df: pd.DataFrame, sig_df: pd.DataFrame, length
             tables.append("% Table 16: Volume-Performance Analysis")
             tables.append(generate_latex_table_volume_analysis(agg_df, volume_analysis))
         
-        # Add NEW word-level difficulty tables (Tables 17-19)
         if word_difficulty_strat_df is not None and len(word_difficulty_strat_df) > 0:
             tables.append("")
             tables.append("% Table 17: Word-Level Difficulty Stratification (by Human Success Rates)")
