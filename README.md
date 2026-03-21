@@ -28,7 +28,6 @@ This repository provides data and code to reproduce the experiments in our paper
 ├── generate_figures.py            # Generate publication figures
 ├── analyze_tokenization.py        # Tokenization robustness analysis
 ├── validate_false_positives.py    # False positive validation
-├── prompt_visualization.tex       # LaTeX prompt visualization
 ├── requirements.txt               # Analysis dependencies
 ├── requirements-inference.txt     # Inference dependencies (GPU, API clients)
 ├── LICENSE-CODE                   # MIT License (code + model results)
@@ -153,13 +152,6 @@ Result directories:
 - `data/qwen-results/{4,8,16}/` -- Qwen3 predictions at 4K/8K/16K thinking token budgets. Each budget directory contains 10 files (5 model sizes x 2 thinking modes).
 - `data/claude-results/` -- Claude Haiku-4.5 predictions (3 thinking + 3 non-thinking configs).
 - `data/openai-results/` -- GPT-5-mini predictions (3 reasoning effort levels: low/medium/high).
-
-## Key Findings
-
-1. Architectural differences produce 2.0--2.2x performance gaps (F1 = 0.761 vs. 0.343), larger than eightfold parameter scaling (83% gain)
-2. Thinking mode consistently improves performance (+0.179 F1)
-3. Budget sensitivity is heterogeneous: high-capacity models gain +0.10--0.14 F1, mid-sized variants saturate or degrade
-4. Modest but consistent human calibration (r = 0.24--0.38) with systematic failures on orthographically atypical common words
 
 ## License
 

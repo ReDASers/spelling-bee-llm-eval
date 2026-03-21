@@ -10,6 +10,7 @@ writing-guide.pdf
 
 # === Paper source (not public) ===
 paper/
+prompt_visualization.tex
 
 # === Python ===
 __pycache__/
