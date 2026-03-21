@@ -1,0 +1,649 @@
+% ==========================================================================
+
+% CORE PERFORMANCE TABLES (Tables 1-5)
+
+% ==========================================================================
+
+
+% Table 1: Model Scaling Effects (with Consistency Metrics)
+
+\begin{table}[t]
+\centering
+\small
+\caption{Model scaling effects on generation performance with consistency metrics. All configurations use thinking mode enabled. Budget = thinking token budget. Volume = mean predictions per puzzle. Success@30 = \% of puzzles achieving F1 $\geq$ 0.3. CV = Coefficient of Variation (lower is more consistent).}
+\label{tab:model_scaling}
+\begin{tabular}{lccccccc}
+\toprule
+\textbf{Model} & \textbf{Budget} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} & \textbf{Volume} & \textbf{CV(F1)} & \textbf{Succ@30} \\
+\midrule
+4B  & 4K   & 0.786 & 0.111 & 0.187 & 6.3 & 0.55 & 14\% \\
+4B  & 8K   & 0.798 & 0.097 & 0.167 & 5.9 & 0.56 & 10\% \\
+4B  & 16K  & 0.777 & 0.111 & 0.187 & 6.5 & 0.55 & 17\% \\
+8B  & 4K   & 0.772 & 0.144 & 0.235 & 8.4 & 0.49 & 31\% \\
+8B  & 8K   & 0.766 & 0.136 & 0.222 & 7.8 & 0.56 & 34\% \\
+8B  & 16K  & 0.769 & 0.139 & 0.227 & 8.2 & 0.49 & 31\% \\
+14B & 4K   & 0.768 & 0.184 & 0.289 & 10.6 & 0.40 & 57\% \\
+14B & 8K   & 0.773 & 0.176 & 0.276 & 9.9 & 0.51 & 40\% \\
+14B & 16K  & 0.781 & 0.166 & 0.267 & 9.4 & 0.44 & 41\% \\
+30B & 4K   & 0.370 & 0.033 & 0.058 & 3.4 & 1.17 & 0\% \\
+32B & 4K   & 0.772 & 0.185 & 0.283 & 11.1 & 0.46 & 43\% \\
+30B & 8K   & 0.786 & 0.201 & 0.310 & 11.2 & 0.43 & 55\% \\
+32B & 8K   & 0.797 & 0.233 & 0.343 & 12.7 & 0.45 & 67\% \\
+30B & 16K  & 0.852 & 0.194 & 0.308 & 10.3 & 0.36 & 52\% \\
+32B & 16K  & 0.775 & 0.212 & 0.317 & 12.8 & 0.46 & 57\% \\
+CLAUDE-HAIKU & 4K   & 0.806 & 0.457 & 0.578 & 26.0 & 0.18 & 100\% \\
+GPT5-MINI & 4K   & 0.791 & 0.530 & 0.625 & 29.8 & 0.17 & 100\% \\
+CLAUDE-HAIKU & 8K   & 0.842 & 0.515 & 0.633 & 27.9 & 0.16 & 100\% \\
+GPT5-MINI & 8K   & 0.839 & 0.590 & 0.684 & 31.3 & 0.18 & 98\% \\
+CLAUDE-HAIKU & 16K  & 0.851 & 0.574 & 0.680 & 30.4 & 0.16 & 98\% \\
+GPT5-MINI & 16K  & 0.888 & 0.680 & 0.761 & 34.4 & 0.10 & 100\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
+% Table 2: Thinking Mode Comparison
+
+\begin{table}[t]
+\centering
+\small
+\caption{Thinking mode effects with statistical significance. All comparisons use paired t-tests ($n=58$).}
+\label{tab:thinking_mode}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Model} & \textbf{$\Delta$P} & \textbf{$\Delta$R} & \textbf{$\Delta$F1} & \textbf{Sig.} \\
+\midrule
+4B  & +0.454 & +0.080 & +0.134 & $p < 0.001$ \\
+8B  & +0.302 & +0.109 & +0.172 & $p < 0.001$ \\
+14B & +0.301 & +0.140 & +0.214 & $p < 0.001$ \\
+30B & +0.155 & +0.087 & +0.130 & $p < 0.001$ \\
+32B & +0.187 & +0.141 & +0.197 & $p < 0.001$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
+% Table 3: Word Length vs. Difficulty
+
+\begin{table}[t]
+\centering
+\small
+\caption{Word length analysis for generated vs. missed words. Longer words are cognitively harder to generate and recall.}
+\label{tab:length_difficulty}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Word Category} & \textbf{Mean Length} & \textbf{Difference} \\
+\midrule
+Found (correct) & 4.67 letters & -- \\
+Missed (not generated) & 5.67 letters & +1.00 \\
+\midrule
+\multicolumn{3}{l}{Paired $t$-test: $t = 62.15$, $p < 0.001$, $d = 1.70$} \\
+\multicolumn{3}{l}{Missed words are longer (harder)} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
+% Table 4: Word Length Coverage Distribution
+
+\begin{table}[t]
+\centering
+\small
+\caption{Recall by word length category (thinking mode ON). Shows whether models explore full solution space or fixate on short words.}
+\label{tab:length_coverage}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Model} & \textbf{4-letter} & \textbf{5-letter} & \textbf{6-letter} & \textbf{7+ letter} \\
+\midrule
+4B  & 22.8\% & 10.6\% & 1.1\% & 0.0\% \\
+4B  & 20.9\% & 8.3\% & 3.5\% & 0.1\% \\
+4B  & 24.5\% & 7.7\% & 2.7\% & 0.3\% \\
+8B  & 27.4\% & 14.9\% & 3.8\% & 2.7\% \\
+8B  & 24.2\% & 16.3\% & 2.8\% & 1.0\% \\
+8B  & 26.7\% & 13.5\% & 4.1\% & 2.0\% \\
+14B & 30.5\% & 20.6\% & 8.1\% & 4.6\% \\
+14B & 30.2\% & 19.3\% & 8.4\% & 3.3\% \\
+14B & 26.6\% & 20.5\% & 10.4\% & 2.2\% \\
+30B & 5.2\% & 5.4\% & 0.5\% & 0.9\% \\
+32B & 29.7\% & 21.8\% & 10.6\% & 5.5\% \\
+30B & 41.8\% & 16.7\% & 4.3\% & 0.5\% \\
+32B & 33.5\% & 26.0\% & 15.0\% & 8.7\% \\
+30B & 41.5\% & 17.7\% & 3.4\% & 1.9\% \\
+32B & 31.3\% & 23.4\% & 12.7\% & 6.4\% \\
+CLAUDE-HAIKU & 61.5\% & 53.1\% & 38.6\% & 17.5\% \\
+GPT5-MINI & 60.1\% & 57.1\% & 48.6\% & 35.5\% \\
+CLAUDE-HAIKU & 64.3\% & 58.9\% & 46.7\% & 24.4\% \\
+GPT5-MINI & 65.8\% & 63.5\% & 55.8\% & 41.5\% \\
+CLAUDE-HAIKU & 69.2\% & 64.3\% & 52.8\% & 32.6\% \\
+GPT5-MINI & 76.2\% & 72.7\% & 63.1\% & 52.4\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
+% Table 5: Pangram Performance (de-emphasized)
+
+\begin{table}[t]
+\centering
+\small
+\caption{Pangram generation performance by configuration. Pangram recall measures recovery of words using all 7 letters. Note: Performance is generally low across all configurations.}
+\label{tab:pangram_performance}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Model} & \textbf{Thinking} & \textbf{Pangram Recall} & \textbf{Std Dev} \\
+\midrule
+4B  & ON  & 0.000 & 0.000 \\
+4B  & OFF & 0.000 & 0.000 \\
+4B  & ON  & 0.000 & 0.000 \\
+4B  & OFF & 0.000 & 0.000 \\
+4B  & ON  & 0.017 & 0.131 \\
+4B  & OFF & 0.000 & 0.000 \\
+8B  & ON  & 0.027 & 0.141 \\
+8B  & OFF & 0.017 & 0.131 \\
+8B  & ON  & 0.030 & 0.149 \\
+8B  & OFF & 0.017 & 0.131 \\
+8B  & ON  & 0.022 & 0.135 \\
+8B  & OFF & 0.017 & 0.131 \\
+14B & ON  & 0.105 & 0.276 \\
+14B & OFF & 0.017 & 0.131 \\
+14B & ON  & 0.052 & 0.195 \\
+14B & OFF & 0.023 & 0.138 \\
+14B & ON  & 0.042 & 0.159 \\
+14B & OFF & 0.006 & 0.044 \\
+30B & ON  & 0.011 & 0.088 \\
+32B & ON  & 0.102 & 0.271 \\
+30B & OFF & 0.006 & 0.044 \\
+32B & OFF & 0.006 & 0.044 \\
+30B & ON  & 0.000 & 0.000 \\
+32B & ON  & 0.158 & 0.322 \\
+30B & OFF & 0.000 & 0.000 \\
+32B & OFF & 0.006 & 0.044 \\
+30B & ON  & 0.017 & 0.131 \\
+32B & ON  & 0.080 & 0.203 \\
+30B & OFF & 0.000 & 0.000 \\
+32B & OFF & 0.043 & 0.194 \\
+CLAUDE-HAIKU & ON  & 0.283 & 0.417 \\
+GPT5-MINI & ON  & 0.569 & 0.453 \\
+CLAUDE-HAIKU & ON  & 0.345 & 0.405 \\
+GPT5-MINI & ON  & 0.659 & 0.428 \\
+CLAUDE-HAIKU & OFF & 0.198 & 0.351 \\
+CLAUDE-HAIKU & OFF & 0.227 & 0.391 \\
+CLAUDE-HAIKU & ON  & 0.473 & 0.436 \\
+GPT5-MINI & ON  & 0.776 & 0.345 \\
+CLAUDE-HAIKU & OFF & 0.201 & 0.360 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
+% ==========================================================================
+
+% EXTENDED ANALYSIS TABLES (Tables 6-12)
+
+% ==========================================================================
+
+
+% Table 6: Complete Model Comparison (ALL Configurations)
+
+\begin{table}[t]
+\centering
+\small
+\caption{Complete model comparison across all configurations. Shows raw performance, consistency (CV), reliability (Worst 5\%), and success rate at F1 $\geq$ 0.3 threshold.}
+\label{tab:complete_comparison}
+\begin{tabular}{llcccccc}
+\toprule
+\textbf{Model} & \textbf{Think} & \textbf{Prec.} & \textbf{Rec.} & \textbf{F1} & \textbf{CV} & \textbf{P5} & \textbf{Succ@30} \\
+\midrule
+4B  & ON  & 0.786 & 11.1\% & 0.187 & 0.55 & 0.038 & 14\% \\
+4B  & OFF & 0.349 & 2.7\% & 0.048 & 1.40 & 0.000 & 0\% \\
+4B  & ON  & 0.798 & 9.7\% & 0.167 & 0.56 & 0.040 & 10\% \\
+4B  & OFF & 0.286 & 2.3\% & 0.041 & 1.59 & 0.000 & 0\% \\
+4B  & ON  & 0.777 & 11.1\% & 0.187 & 0.55 & 0.046 & 17\% \\
+4B  & OFF & 0.363 & 2.8\% & 0.049 & 1.39 & 0.000 & 0\% \\
+8B  & ON  & 0.772 & 14.4\% & 0.235 & 0.49 & 0.047 & 31\% \\
+8B  & OFF & 0.477 & 3.3\% & 0.059 & 0.94 & 0.000 & 0\% \\
+8B  & ON  & 0.766 & 13.6\% & 0.222 & 0.56 & 0.041 & 34\% \\
+8B  & OFF & 0.427 & 2.5\% & 0.046 & 1.08 & 0.000 & 0\% \\
+8B  & ON  & 0.769 & 13.9\% & 0.227 & 0.49 & 0.043 & 31\% \\
+8B  & OFF & 0.495 & 3.4\% & 0.062 & 0.90 & 0.000 & 0\% \\
+14B & ON  & 0.768 & 18.4\% & 0.289 & 0.40 & 0.090 & 57\% \\
+14B & OFF & 0.424 & 3.3\% & 0.060 & 1.12 & 0.000 & 2\% \\
+14B & ON  & 0.773 & 17.6\% & 0.276 & 0.51 & 0.070 & 40\% \\
+14B & OFF & 0.505 & 3.5\% & 0.063 & 0.95 & 0.000 & 0\% \\
+14B & ON  & 0.781 & 16.6\% & 0.267 & 0.44 & 0.051 & 41\% \\
+14B & OFF & 0.491 & 3.8\% & 0.068 & 0.90 & 0.000 & 0\% \\
+30B & ON  & 0.370 & 3.3\% & 0.058 & 1.17 & 0.000 & 0\% \\
+32B & ON  & 0.772 & 18.5\% & 0.283 & 0.46 & 0.060 & 43\% \\
+30B & OFF & 0.426 & 4.2\% & 0.072 & 1.04 & 0.000 & 0\% \\
+32B & OFF & 0.558 & 6.9\% & 0.116 & 0.83 & 0.000 & 7\% \\
+30B & ON  & 0.786 & 20.1\% & 0.310 & 0.43 & 0.073 & 55\% \\
+32B & ON  & 0.797 & 23.3\% & 0.343 & 0.45 & 0.076 & 67\% \\
+30B & OFF & 0.534 & 6.5\% & 0.107 & 0.77 & 0.000 & 3\% \\
+32B & OFF & 0.620 & 6.9\% & 0.118 & 0.77 & 0.000 & 3\% \\
+30B & ON  & 0.852 & 19.4\% & 0.308 & 0.36 & 0.149 & 52\% \\
+32B & ON  & 0.775 & 21.2\% & 0.317 & 0.46 & 0.066 & 57\% \\
+30B & OFF & 0.582 & 6.1\% & 0.107 & 0.71 & 0.000 & 2\% \\
+32B & OFF & 0.603 & 6.9\% & 0.117 & 0.75 & 0.000 & 3\% \\
+CLAUDE-HAIKU & ON  & 0.806 & 45.7\% & 0.578 & 0.18 & 0.424 & 100\% \\
+GPT5-MINI & ON  & 0.791 & 53.0\% & 0.625 & 0.17 & 0.447 & 100\% \\
+CLAUDE-HAIKU & ON  & 0.842 & 51.5\% & 0.633 & 0.16 & 0.481 & 100\% \\
+GPT5-MINI & ON  & 0.839 & 59.0\% & 0.684 & 0.18 & 0.520 & 98\% \\
+CLAUDE-HAIKU & OFF & 0.414 & 33.1\% & 0.360 & 0.22 & 0.233 & 76\% \\
+CLAUDE-HAIKU & OFF & 0.445 & 33.4\% & 0.369 & 0.23 & 0.233 & 81\% \\
+CLAUDE-HAIKU & ON  & 0.851 & 57.4\% & 0.680 & 0.16 & 0.557 & 98\% \\
+GPT5-MINI & ON  & 0.888 & 68.0\% & 0.761 & 0.10 & 0.666 & 100\% \\
+CLAUDE-HAIKU & OFF & 0.450 & 34.1\% & 0.374 & 0.22 & 0.263 & 83\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
+% Table 7: Performance by Puzzle Difficulty
+
+\begin{table}[t]
+\centering
+\small
+\caption{Performance stratified by puzzle difficulty (thinking mode ON). Easy: $<$30 words, Medium: 30--50 words, Hard: $>$50 words. Gap shows performance degradation from easy to hard puzzles.}
+\label{tab:difficulty_stratification}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Model} & \textbf{Easy} & \textbf{Medium} & \textbf{Hard} & \textbf{Gap} \\
+\midrule
+14B & 25.5\% & 20.6\% & 14.5\% & +11.0pp \\
+30B & 5.2\% & 3.2\% & 3.1\% & +2.1pp \\
+32B & 25.1\% & 20.9\% & 14.4\% & +10.8pp \\
+4B  & 18.2\% & 10.7\% & 10.3\% & +7.9pp \\
+8B  & 24.4\% & 14.4\% & 12.7\% & +11.7pp \\
+CLAUDE-HAIKU & 53.9\% & 48.1\% & 41.3\% & +12.6pp \\
+GPT5-MINI & 76.0\% & 56.6\% & 44.6\% & +31.4pp \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
+% Table 8: Reliability and Worst-Case Analysis
+
+\begin{table}[t]
+\centering
+\small
+\caption{Reliability analysis (thinking mode ON). CV = Coefficient of Variation (lower is better). P5/P95 = 5th/95th percentile F1 scores. Range shows performance variability.}
+\label{tab:reliability_analysis}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Model} & \textbf{Mean F1} & \textbf{CV} & \textbf{P5 (Worst)} & \textbf{P95 (Best)} & \textbf{Range} \\
+\midrule
+4B  & 0.187 & 0.55 & 0.038 & 0.371 & 0.332 \\
+4B  & 0.167 & 0.56 & 0.040 & 0.348 & 0.308 \\
+4B  & 0.187 & 0.55 & 0.046 & 0.345 & 0.299 \\
+8B  & 0.235 & 0.49 & 0.047 & 0.419 & 0.372 \\
+8B  & 0.222 & 0.56 & 0.041 & 0.416 & 0.374 \\
+8B  & 0.227 & 0.49 & 0.043 & 0.426 & 0.383 \\
+14B & 0.289 & 0.40 & 0.090 & 0.441 & 0.350 \\
+14B & 0.276 & 0.51 & 0.070 & 0.489 & 0.418 \\
+14B & 0.267 & 0.44 & 0.051 & 0.429 & 0.379 \\
+30B & 0.058 & 1.17 & 0.000 & 0.212 & 0.212 \\
+32B & 0.283 & 0.46 & 0.060 & 0.479 & 0.419 \\
+30B & 0.310 & 0.43 & 0.073 & 0.498 & 0.425 \\
+32B & 0.343 & 0.45 & 0.076 & 0.579 & 0.504 \\
+30B & 0.308 & 0.36 & 0.149 & 0.472 & 0.323 \\
+32B & 0.317 & 0.46 & 0.066 & 0.517 & 0.451 \\
+CLAUDE-HAIKU & 0.578 & 0.18 & 0.424 & 0.739 & 0.315 \\
+GPT5-MINI & 0.625 & 0.17 & 0.447 & 0.776 & 0.329 \\
+CLAUDE-HAIKU & 0.633 & 0.16 & 0.481 & 0.794 & 0.313 \\
+GPT5-MINI & 0.684 & 0.18 & 0.520 & 0.840 & 0.320 \\
+CLAUDE-HAIKU & 0.680 & 0.16 & 0.557 & 0.837 & 0.280 \\
+GPT5-MINI & 0.761 & 0.10 & 0.666 & 0.876 & 0.210 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
+% Table 9: Error Type Distribution
+
+\begin{table}[t]
+\centering
+\small
+\caption{Error distribution by configuration. All false positives are non-dictionary words (constraint violations = 0\%). Shows models follow rules but lack lexical coverage.}
+\label{tab:error_distribution}
+\begin{tabular}{llccc}
+\toprule
+\textbf{Model} & \textbf{Think} & \textbf{FP/Puzzle} & \textbf{Constraint} & \textbf{Non-Dict} \\
+\midrule
+4B  & ON  & 1.4 & 0\% & 100\% \\
+4B  & OFF & 1.8 & 0\% & 100\% \\
+4B  & ON  & 1.3 & 0\% & 100\% \\
+4B  & OFF & 2.1 & 0\% & 100\% \\
+4B  & ON  & 1.4 & 0\% & 100\% \\
+4B  & OFF & 5.3 & 0\% & 100\% \\
+8B  & ON  & 1.9 & 0\% & 100\% \\
+8B  & OFF & 4.4 & 0\% & 100\% \\
+8B  & ON  & 1.8 & 0\% & 100\% \\
+8B  & OFF & 1.3 & 0\% & 100\% \\
+8B  & ON  & 1.9 & 0\% & 100\% \\
+8B  & OFF & 1.5 & 0\% & 100\% \\
+14B & ON  & 2.4 & 0\% & 100\% \\
+14B & OFF & 8.1 & 0\% & 100\% \\
+14B & ON  & 2.0 & 0\% & 100\% \\
+14B & OFF & 5.3 & 0\% & 100\% \\
+14B & ON  & 1.8 & 0\% & 100\% \\
+14B & OFF & 2.0 & 0\% & 100\% \\
+30B & ON  & 1.9 & 0\% & 100\% \\
+32B & ON  & 2.8 & 0\% & 100\% \\
+30B & OFF & 2.1 & 0\% & 100\% \\
+32B & OFF & 2.8 & 0\% & 100\% \\
+30B & ON  & 2.3 & 0\% & 100\% \\
+32B & ON  & 2.6 & 0\% & 100\% \\
+30B & OFF & 7.5 & 0\% & 100\% \\
+32B & OFF & 6.6 & 0\% & 100\% \\
+30B & ON  & 1.6 & 0\% & 100\% \\
+32B & ON  & 3.3 & 0\% & 100\% \\
+30B & OFF & 2.4 & 0\% & 100\% \\
+32B & OFF & 2.6 & 0\% & 100\% \\
+CLAUDE-HAIKU & ON  & 5.1 & 0\% & 100\% \\
+GPT5-MINI & ON  & 6.1 & 0\% & 100\% \\
+CLAUDE-HAIKU & ON  & 4.5 & 0\% & 100\% \\
+GPT5-MINI & ON  & 4.5 & 0\% & 100\% \\
+CLAUDE-HAIKU & OFF & 22.3 & 0\% & 100\% \\
+CLAUDE-HAIKU & OFF & 20.4 & 0\% & 100\% \\
+CLAUDE-HAIKU & ON  & 4.3 & 0\% & 100\% \\
+GPT5-MINI & ON  & 3.8 & 0\% & 100\% \\
+CLAUDE-HAIKU & OFF & 20.8 & 0\% & 100\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
+% Table 10: Difficulty-Weighted vs Standard Recall
+
+\begin{table}[t]
+\centering
+\small
+\caption{Difficulty-weighted vs standard recall (thinking mode ON). Negative weighting effect indicates bias toward easier (shorter) words.}
+\label{tab:weighted_recall}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Model} & \textbf{Standard Rec.} & \textbf{Weighted Rec.} & \textbf{Effect} \\
+\midrule
+4B  & 11.1\% & 5.9\% & -5.2pp \\
+4B  & 9.7\% & 4.9\% & -4.8pp \\
+4B  & 11.1\% & 6.1\% & -4.9pp \\
+8B  & 14.4\% & 8.3\% & -6.1pp \\
+8B  & 13.6\% & 8.0\% & -5.6pp \\
+8B  & 13.9\% & 7.7\% & -6.2pp \\
+14B & 18.4\% & 11.8\% & -6.6pp \\
+14B & 17.6\% & 11.6\% & -6.0pp \\
+14B & 16.6\% & 11.1\% & -5.5pp \\
+30B & 3.3\% & 2.0\% & -1.3pp \\
+32B & 18.5\% & 11.3\% & -7.2pp \\
+30B & 20.1\% & 11.3\% & -8.7pp \\
+32B & 23.3\% & 15.8\% & -7.4pp \\
+30B & 19.4\% & 10.9\% & -8.5pp \\
+32B & 21.2\% & 14.4\% & -6.8pp \\
+CLAUDE-HAIKU & 45.7\% & 33.4\% & -12.3pp \\
+GPT5-MINI & 53.0\% & 41.8\% & -11.1pp \\
+CLAUDE-HAIKU & 51.5\% & 38.8\% & -12.6pp \\
+GPT5-MINI & 59.0\% & 47.9\% & -11.1pp \\
+CLAUDE-HAIKU & 57.4\% & 43.7\% & -13.7pp \\
+GPT5-MINI & 68.0\% & 55.7\% & -12.4pp \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
+% Table 11: Thinking Mode Impact on Consistency
+
+\begin{table}[t]
+\centering
+\small
+\caption{Thinking mode impact on consistency metrics. Negative $\Delta$CV indicates improved consistency. Note 8B shows WORSE consistency with thinking enabled.}
+\label{tab:thinking_consistency}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Model} & \textbf{$\Delta$F1} & \textbf{$\Delta$CV} & \textbf{$\Delta$P5} & \textbf{$\Delta$Succ@30} \\
+\midrule
+4B  & +0.139 & -0.85 & +0.038 & +14pp \\
+4B  & +0.126 & -1.03 & +0.040 & +10pp \\
+4B  & +0.138 & -0.85 & +0.046 & +17pp \\
+8B  & +0.177 & -0.45 & +0.047 & +31pp \\
+8B  & +0.176 & -0.51 & +0.041 & +34pp \\
+8B  & +0.165 & -0.41 & +0.043 & +31pp \\
+14B & +0.229 & -0.71 & +0.090 & +55pp \\
+14B & +0.213 & -0.44 & +0.070 & +40pp \\
+14B & +0.199 & -0.46 & +0.051 & +41pp \\
+30B & -0.014 & +0.13 & +0.000 & +0pp \\
+32B & +0.168 & -0.38 & +0.060 & +36pp \\
+30B & +0.203 & -0.33 & +0.073 & +52pp \\
+32B & +0.225 & -0.32 & +0.076 & +64pp \\
+30B & +0.201 & -0.36 & +0.149 & +50pp \\
+32B & +0.200 & -0.29 & +0.066 & +53pp \\
+CLAUDE-HAIKU & +0.273 & -0.06 & +0.248 & +24pp \\
+CLAUDE-HAIKU & +0.306 & -0.06 & +0.294 & +16pp \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
+% Table 12: Scaling Pattern with Anomaly Analysis
+
+\begin{table}[t]
+\centering
+\small
+\caption{Scaling pattern analysis (thinking mode ON). Shows pairwise model comparisons. The 4B$\rightarrow$8B transition shows anomalous performance degradation.}
+\label{tab:scaling_anomaly}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Comparison} & \textbf{$\Delta$F1} & \textbf{$\Delta$Recall} & \textbf{Status} \\
+\midrule
+4B$\rightarrow$8B & +0.048 & +3.3pp & Improved \\
+8B$\rightarrow$14B & +0.054 & +4.0pp & Improved \\
+14B$\rightarrow$30B & -0.231 & -15.1pp & \textbf{ANOMALY} \\
+30B$\rightarrow$32B & +0.225 & +15.2pp & Improved \\
+32B$\rightarrow$CLAUDE-HAIKU & +0.295 & +27.2pp & Improved \\
+CLAUDE-HAIKU$\rightarrow$GPT5-MINI & +0.047 & +7.3pp & Improved \\
+4B$\rightarrow$8B & +0.055 & +3.8pp & Improved \\
+8B$\rightarrow$14B & +0.054 & +4.1pp & Improved \\
+14B$\rightarrow$30B & +0.034 & +2.4pp & Improved \\
+30B$\rightarrow$32B & +0.034 & +3.2pp & Improved \\
+32B$\rightarrow$CLAUDE-HAIKU & +0.290 & +28.2pp & Improved \\
+CLAUDE-HAIKU$\rightarrow$GPT5-MINI & +0.051 & +7.6pp & Improved \\
+4B$\rightarrow$8B & +0.039 & +2.8pp & Improved \\
+8B$\rightarrow$14B & +0.041 & +2.7pp & Improved \\
+14B$\rightarrow$30B & +0.041 & +2.8pp & Improved \\
+30B$\rightarrow$32B & +0.009 & +1.8pp & Improved \\
+32B$\rightarrow$CLAUDE-HAIKU & +0.363 & +36.3pp & Improved \\
+CLAUDE-HAIKU$\rightarrow$GPT5-MINI & +0.081 & +10.6pp & Improved \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
+% ==========================================================================
+
+% THINKING BUDGET ANALYSIS TABLES (Tables 13-16)
+
+% ==========================================================================
+
+
+% Table 13: Thinking Budget Effects
+
+\begin{table}[t]
+\centering
+\small
+\caption{Thinking budget effects on performance. Shows incremental changes when increasing budget. Efficiency measured as F1 improvement per 1K tokens. Diminishing returns flagged when $\Delta$F1 $<$ 0.01.}
+\label{tab:budget_effects}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Model} & \textbf{Budget Change} & \textbf{$\Delta$F1} & \textbf{$\Delta$Recall} & \textbf{Efficiency} & \textbf{Dim. Returns} \\
+\midrule
+4B  & 4K$\rightarrow$8K & -0.020 & -1.3pp & -0.0049 & Yes \\
+4B  & 8K$\rightarrow$16K & +0.020 & +1.3pp & +0.0025 & No \\
+8B  & 4K$\rightarrow$8K & -0.014 & -0.8pp & -0.0033 & Yes \\
+8B  & 8K$\rightarrow$16K & +0.005 & +0.3pp & +0.0006 & Yes \\
+14B & 4K$\rightarrow$8K & -0.013 & -0.8pp & -0.0032 & Yes \\
+14B & 8K$\rightarrow$16K & -0.009 & -1.1pp & -0.0011 & Yes \\
+30B & 4K$\rightarrow$8K & +0.251 & +16.8pp & +0.0613 & No \\
+30B & 8K$\rightarrow$16K & -0.002 & -0.7pp & -0.0002 & Yes \\
+32B & 4K$\rightarrow$8K & +0.060 & +4.8pp & +0.0146 & No \\
+32B & 8K$\rightarrow$16K & -0.026 & -2.1pp & -0.0032 & Yes \\
+CLAUDE-HAIKU & 4K$\rightarrow$8K & +0.054 & +5.8pp & +0.0133 & No \\
+CLAUDE-HAIKU & 8K$\rightarrow$16K & +0.047 & +6.0pp & +0.0058 & No \\
+GPT5-MINI & 4K$\rightarrow$8K & +0.059 & +6.1pp & +0.0145 & No \\
+GPT5-MINI & 8K$\rightarrow$16K & +0.077 & +9.0pp & +0.0094 & No \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
+% Table 14: Budget-Model Size Interaction
+
+\begin{table}[t]
+\centering
+\small
+\caption{Budget sensitivity by model size. Shows total improvement across budget range (4K--16K tokens). Sensitivity: High ($>$0.05), Medium (0.02--0.05), Low ($<$0.02).}
+\label{tab:budget_interaction}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Model} & \textbf{Budget Range} & \textbf{F1 Improv.} & \textbf{Efficiency} & \textbf{Sensitivity} \\
+\midrule
+4B  & 4K--16K & +0.000 & +0.0000 & Low \\
+8B  & 4K--16K & -0.009 & -0.0007 & Low \\
+14B & 4K--16K & -0.022 & -0.0018 & Low \\
+30B & 4K--16K & +0.249 & +0.0203 & High \\
+32B & 4K--16K & +0.033 & +0.0027 & Medium \\
+CLAUDE-HAIKU & 4K--16K & +0.102 & +0.0083 & High \\
+GPT5-MINI & 4K--16K & +0.136 & +0.0111 & High \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
+% Table 15: Optimal Budget Recommendations
+
+\begin{table}[t]
+\centering
+\small
+\caption{Optimal thinking budget recommendations by model size. Shows budget that maximizes F1 score based on tested configurations.}
+\label{tab:optimal_budget}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Model} & \textbf{Optimal Budget} & \textbf{F1} & \textbf{Recall} & \textbf{Precision} \\
+\midrule
+4B  & 16K  tok & 0.187 & 0.111 & 0.777 \\
+8B  & 4K   tok & 0.235 & 0.144 & 0.772 \\
+14B & 4K   tok & 0.289 & 0.184 & 0.768 \\
+30B & 8K   tok & 0.310 & 0.201 & 0.786 \\
+32B & 8K   tok & 0.343 & 0.233 & 0.797 \\
+CLAUDE-HAIKU & 16K  tok & 0.680 & 0.574 & 0.851 \\
+GPT5-MINI & 16K  tok & 0.761 & 0.680 & 0.888 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
+% Table 16: Volume-Performance Analysis
+
+\begin{table}[t]
+\centering
+\small
+\caption{Generation volume and quality metrics. Volume = mean predictions per puzzle. Efficiency = recall normalized by generation volume. Weak volume-precision correlation ($r=+0.13$) indicates models maintain quality while increasing coverage.}
+\label{tab:volume_analysis}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Model} & \textbf{Volume} & \textbf{Precision} & \textbf{Recall} & \textbf{Efficiency} \\
+\midrule
+14B & 10.6 & 0.768 & 0.184 & 0.815 \\
+30B & 11.2 & 0.786 & 0.201 & 0.836 \\
+32B & 12.7 & 0.797 & 0.233 & 0.854 \\
+4B  & 6.5 & 0.777 & 0.111 & 0.795 \\
+8B  & 8.4 & 0.772 & 0.144 & 0.800 \\
+CLAUDE-HAIKU & 30.4 & 0.851 & 0.574 & 0.881 \\
+GPT5-MINI & 34.4 & 0.888 & 0.680 & 0.923 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
+% Table 17: Word-Level Difficulty Stratification (by Human Success Rates)
+
+\begin{table}[t]
+\centering
+\small
+\caption{Model recall stratified by human word difficulty quartiles. Q1 = Very Easy (>75\% human success), Q4 = Very Hard (<25\% human success). Shows whether models struggle with same words as humans.}
+\label{tab:word_difficulty_strat}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Model} & \textbf{Q1 (Very Easy)} & \textbf{Q2 (Easy)} & \textbf{Q3 (Hard)} & \textbf{Q4 (Very Hard)} \\
+\midrule
+4B  & 23.3\% & 11.4\% & 5.5\% & 1.2\% \\
+8B  & 27.3\% & 16.2\% & 7.6\% & 2.6\% \\
+14B & 30.6\% & 19.7\% & 12.5\% & 4.6\% \\
+30B & 28.0\% & 16.8\% & 7.7\% & 2.3\% \\
+32B & 35.2\% & 23.1\% & 15.9\% & 5.3\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
+% Table 18: Model-Human Calibration
+
+\begin{table}[t]
+\centering
+\small
+\caption{Model-human calibration: correlation between model difficulty and human difficulty at word level. Higher correlation indicates models struggle with same words as humans. MAE = Mean Absolute Error between human and model difficulty scores.}
+\label{tab:calibration}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Model} & \textbf{Correlation} & \textbf{MAE} & \textbf{Words Analyzed} \\
+\midrule
+4B  & +0.273 & 0.693 & 2710 \\
+8B  & +0.283 & 0.672 & 2710 \\
+14B & +0.262 & 0.651 & 2710 \\
+30B & +0.273 & 0.670 & 2710 \\
+32B & +0.288 & 0.629 & 2710 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
+% Table 19: Systematic Failure Analysis
+
+\begin{table}[t]
+\centering
+\small
+\caption{Systematic failure analysis: words that are easy for humans (>80\% success) but frequently missed by models. Miss rate = percentage of model predictions that failed to generate the word.}
+\label{tab:failure_analysis}
+\begin{tabular}{llcc}
+\toprule
+\textbf{Word} & \textbf{Length} & \textbf{Human Success} & \textbf{Model Miss Rate} \\
+\midrule
+loll         & 4 & 83.4\% & 98.3\% \\
+illicit      & 7 & 84.3\% & 98.3\% \\
+acai         & 4 & 84.2\% & 97.4\% \\
+nana         & 4 & 84.7\% & 96.8\% \\
+annotation   & 10 & 86.1\% & 96.6\% \\
+momma        & 5 & 87.6\% & 96.6\% \\
+papa         & 4 & 88.8\% & 95.7\% \\
+intonation   & 10 & 85.4\% & 94.9\% \\
+ammo         & 4 & 89.5\% & 94.0\% \\
+data         & 4 & 91.1\% & 93.8\% \\
+\bottomrule
+\end{tabular}
+\end{table}

@@ -1,0 +1,98 @@
+{
+  "by_length": {
+    "5": {
+      "num_words": 447,
+      "mean_success_rate": 0.776146793437733,
+      "std_success_rate": 0.1546716467884624,
+      "median_success_rate": 0.8154
+    },
+    "4": {
+      "num_words": 589,
+      "mean_success_rate": 0.8768460882043819,
+      "std_success_rate": 0.09764724962611306,
+      "median_success_rate": 0.9067
+    },
+    "6": {
+      "num_words": 402,
+      "mean_success_rate": 0.7155683220800758,
+      "std_success_rate": 0.1777399935869829,
+      "median_success_rate": 0.7462500000000001
+    },
+    "7": {
+      "num_words": 279,
+      "mean_success_rate": 0.7165288530465949,
+      "std_success_rate": 0.20346516955455182,
+      "median_success_rate": 0.7713
+    },
+    "8": {
+      "num_words": 157,
+      "mean_success_rate": 0.6729376326963906,
+      "std_success_rate": 0.1868937816012283,
+      "median_success_rate": 0.6675
+    },
+    "9": {
+      "num_words": 69,
+      "mean_success_rate": 0.6638050724637681,
+      "std_success_rate": 0.17837561231422028,
+      "median_success_rate": 0.6951
+    },
+    "10": {
+      "num_words": 47,
+      "mean_success_rate": 0.6533003546099291,
+      "std_success_rate": 0.19561764209047552,
+      "median_success_rate": 0.686
+    },
+    "12": {
+      "num_words": 6,
+      "mean_success_rate": 0.5597,
+      "std_success_rate": 0.16866822463048575,
+      "median_success_rate": 0.6276999999999999
+    },
+    "11": {
+      "num_words": 10,
+      "mean_success_rate": 0.5550400000000001,
+      "std_success_rate": 0.15928845658113458,
+      "median_success_rate": 0.5732
+    },
+    "13": {
+      "num_words": 1,
+      "mean_success_rate": 0.5906,
+      "std_success_rate": 0.0,
+      "median_success_rate": 0.5906
+    }
+  },
+  "by_category": {
+    "4": {
+      "mean": 0.8768460882043819,
+      "std": 0.09764724962611306,
+      "median": 0.9067,
+      "count": 589,
+      "min": 0.4292,
+      "max": 0.9901
+    },
+    "5": {
+      "mean": 0.776146793437733,
+      "std": 0.1546716467884624,
+      "median": 0.8154,
+      "count": 447,
+      "min": 0.2547,
+      "max": 0.9829
+    },
+    "6": {
+      "mean": 0.7155683220800758,
+      "std": 0.1777399935869829,
+      "median": 0.7462500000000001,
+      "count": 402,
+      "min": 0.144,
+      "max": 0.9708
+    },
+    "7+": {
+      "mean": 0.6881715729349737,
+      "std": 0.19706559000812876,
+      "median": 0.7076,
+      "count": 569,
+      "min": 0.0798,
+      "max": 0.9844
+    }
+  }
+}

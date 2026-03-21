@@ -1,0 +1,53 @@
+# === Private / Internal ===
+CLAUDE.md
+README-internal.md
+.mcp.json
+.claude/
+chatsumm/
+plans/
+HowtoReadPaper.pdf
+writing-guide.pdf
+
+# === Paper source (not public) ===
+paper/
+
+# === Python ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+env/
+venv/
+*.egg-info/
+dist/
+build/
+
+# === LaTeX Build Artifacts ===
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.toc
+*.lof
+*.lot
+languageresource.aux
+
+# === Figures: generated output ===
+figures/
+
+# === OS Files ===
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# === IDE ===
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

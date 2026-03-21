@@ -1,0 +1,447 @@
+{
+  "dictionary_size": 259404,
+  "total_unique_fps": 6083,
+  "total_fp_occurrences": 10321,
+  "valid_english_unique": 876,
+  "hallucination_unique": 5207,
+  "valid_english_pct": 14.4,
+  "valid_occurrences": 3080,
+  "halluc_occurrences": 7241,
+  "valid_occ_pct": 29.8,
+  "per_family": {
+    "Qwen": {
+      "unique_fps": 3325,
+      "valid_unique": 441,
+      "halluc_unique": 2884,
+      "valid_pct": 13.263157894736842,
+      "total_occurrences": 4998,
+      "valid_occurrences": 1324,
+      "halluc_occurrences": 3674,
+      "valid_occ_pct": 26.4905962384954
+    },
+    "Claude-Haiku": {
+      "unique_fps": 2746,
+      "valid_unique": 467,
+      "halluc_unique": 2279,
+      "valid_pct": 17.006554989075017,
+      "total_occurrences": 4489,
+      "valid_occurrences": 1166,
+      "halluc_occurrences": 3323,
+      "valid_occ_pct": 25.974604588995323
+    },
+    "GPT-5-mini": {
+      "unique_fps": 500,
+      "valid_unique": 323,
+      "halluc_unique": 177,
+      "valid_pct": 64.6,
+      "total_occurrences": 834,
+      "valid_occurrences": 590,
+      "halluc_occurrences": 244,
+      "valid_occ_pct": 70.74340527577938
+    }
+  },
+  "top_valid_excluded": [
+    {
+      "word": "chine",
+      "count": 65
+    },
+    {
+      "word": "milt",
+      "count": 49
+    },
+    {
+      "word": "cain",
+      "count": 30
+    },
+    {
+      "word": "adit",
+      "count": 25
+    },
+    {
+      "word": "bally",
+      "count": 24
+    },
+    {
+      "word": "cine",
+      "count": 24
+    },
+    {
+      "word": "vatic",
+      "count": 24
+    },
+    {
+      "word": "pion",
+      "count": 23
+    },
+    {
+      "word": "boney",
+      "count": 23
+    },
+    {
+      "word": "chirk",
+      "count": 22
+    },
+    {
+      "word": "actin",
+      "count": 22
+    },
+    {
+      "word": "roman",
+      "count": 20
+    },
+    {
+      "word": "rota",
+      "count": 20
+    },
+    {
+      "word": "amor",
+      "count": 19
+    },
+    {
+      "word": "nark",
+      "count": 19
+    },
+    {
+      "word": "celt",
+      "count": 18
+    },
+    {
+      "word": "choky",
+      "count": 17
+    },
+    {
+      "word": "miry",
+      "count": 17
+    },
+    {
+      "word": "coon",
+      "count": 16
+    },
+    {
+      "word": "rami",
+      "count": 16
+    },
+    {
+      "word": "whig",
+      "count": 16
+    },
+    {
+      "word": "mora",
+      "count": 15
+    },
+    {
+      "word": "blain",
+      "count": 15
+    },
+    {
+      "word": "wold",
+      "count": 15
+    },
+    {
+      "word": "limen",
+      "count": 14
+    },
+    {
+      "word": "amir",
+      "count": 14
+    },
+    {
+      "word": "mach",
+      "count": 14
+    },
+    {
+      "word": "mammy",
+      "count": 14
+    },
+    {
+      "word": "fain",
+      "count": 14
+    },
+    {
+      "word": "lich",
+      "count": 14
+    },
+    {
+      "word": "tule",
+      "count": 13
+    },
+    {
+      "word": "kirk",
+      "count": 13
+    },
+    {
+      "word": "bitch",
+      "count": 13
+    },
+    {
+      "word": "carina",
+      "count": 13
+    },
+    {
+      "word": "cole",
+      "count": 13
+    },
+    {
+      "word": "cutin",
+      "count": 12
+    },
+    {
+      "word": "bogy",
+      "count": 12
+    },
+    {
+      "word": "homo",
+      "count": 12
+    },
+    {
+      "word": "whin",
+      "count": 12
+    },
+    {
+      "word": "wain",
+      "count": 12
+    },
+    {
+      "word": "bene",
+      "count": 12
+    },
+    {
+      "word": "vita",
+      "count": 12
+    },
+    {
+      "word": "awol",
+      "count": 11
+    },
+    {
+      "word": "tical",
+      "count": 11
+    },
+    {
+      "word": "liana",
+      "count": 11
+    },
+    {
+      "word": "clew",
+      "count": 11
+    },
+    {
+      "word": "clit",
+      "count": 11
+    },
+    {
+      "word": "celtic",
+      "count": 11
+    },
+    {
+      "word": "mort",
+      "count": 10
+    },
+    {
+      "word": "noria",
+      "count": 10
+    }
+  ],
+  "top_hallucinations": [
+    {
+      "word": "tondo",
+      "count": 18
+    },
+    {
+      "word": "acini",
+      "count": 14
+    },
+    {
+      "word": "marin",
+      "count": 12
+    },
+    {
+      "word": "foin",
+      "count": 12
+    },
+    {
+      "word": "oxid",
+      "count": 12
+    },
+    {
+      "word": "fino",
+      "count": 11
+    },
+    {
+      "word": "coun",
+      "count": 11
+    },
+    {
+      "word": "flin",
+      "count": 11
+    },
+    {
+      "word": "doot",
+      "count": 11
+    },
+    {
+      "word": "coinc",
+      "count": 10
+    },
+    {
+      "word": "dopant",
+      "count": 10
+    },
+    {
+      "word": "baili",
+      "count": 9
+    },
+    {
+      "word": "capita",
+      "count": 9
+    },
+    {
+      "word": "agin",
+      "count": 9
+    },
+    {
+      "word": "diox",
+      "count": 9
+    },
+    {
+      "word": "carn",
+      "count": 9
+    },
+    {
+      "word": "loden",
+      "count": 9
+    },
+    {
+      "word": "palo",
+      "count": 8
+    },
+    {
+      "word": "gilet",
+      "count": 8
+    },
+    {
+      "word": "demic",
+      "count": 8
+    },
+    {
+      "word": "bathy",
+      "count": 8
+    },
+    {
+      "word": "cunic",
+      "count": 8
+    },
+    {
+      "word": "caron",
+      "count": 8
+    },
+    {
+      "word": "triac",
+      "count": 7
+    },
+    {
+      "word": "viced",
+      "count": 7
+    },
+    {
+      "word": "potin",
+      "count": 7
+    },
+    {
+      "word": "winching",
+      "count": 7
+    },
+    {
+      "word": "avoir",
+      "count": 7
+    },
+    {
+      "word": "mache",
+      "count": 7
+    },
+    {
+      "word": "vitae",
+      "count": 7
+    },
+    {
+      "word": "intoi",
+      "count": 7
+    },
+    {
+      "word": "calt",
+      "count": 7
+    },
+    {
+      "word": "pingo",
+      "count": 7
+    },
+    {
+      "word": "emic",
+      "count": 7
+    },
+    {
+      "word": "viate",
+      "count": 7
+    },
+    {
+      "word": "etic",
+      "count": 7
+    },
+    {
+      "word": "coning",
+      "count": 7
+    },
+    {
+      "word": "litelite",
+      "count": 6
+    },
+    {
+      "word": "anno",
+      "count": 6
+    },
+    {
+      "word": "cultcult",
+      "count": 6
+    },
+    {
+      "word": "belf",
+      "count": 6
+    },
+    {
+      "word": "antia",
+      "count": 6
+    },
+    {
+      "word": "clewed",
+      "count": 6
+    },
+    {
+      "word": "doweled",
+      "count": 6
+    },
+    {
+      "word": "antid",
+      "count": 6
+    },
+    {
+      "word": "pacta",
+      "count": 6
+    },
+    {
+      "word": "wagoning",
+      "count": 6
+    },
+    {
+      "word": "hecking",
+      "count": 6
+    },
+    {
+      "word": "ined",
+      "count": 6
+    },
+    {
+      "word": "bailbail",
+      "count": 6
+    }
+  ]
+}

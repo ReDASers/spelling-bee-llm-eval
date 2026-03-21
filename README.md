@@ -3,26 +3,36 @@
 **Bryan E. Tuck and Rakesh M. Verma**
 University of Houston
 
-Accepted at LREC 2026.
+Accepted at LREC-COLING 2026. [[arXiv]](https://arxiv.org/abs/2511.21086)
 
 ## Overview
 
-This repository provides data and code to reproduce the experiments in our paper evaluating LLM orthographic constraint satisfaction using the NYT Spelling Bee task. We test 28 configurations spanning three model families (Qwen3, Claude Haiku-4.5, GPT-5-mini) on 58 word puzzles, with human difficulty ground truth from 10,000+ NYT users per puzzle.
+This repository provides data and code to reproduce the experiments in our paper evaluating LLM orthographic constraint satisfaction using the NYT Spelling Bee task. We test 28 configurations spanning three model families (Qwen3 4B--32B, Claude Haiku-4.5, GPT-5-mini) on 58 word puzzles, with human difficulty ground truth from 10,000+ NYT users per puzzle.
 
 ## Repository Structure
 
-```
-├── src/                        # All scripts
-│   ├── run_claude_inference.py # Claude API inference
-│   ├── run_openai_inference.py # OpenAI API inference
-│   └── colab_spelling_bee.py   # Google Colab inference script
+```text
+├── src/
+│   ├── colab_spelling_bee.py      # Qwen3 inference (Google Colab / vLLM)
+│   ├── run_claude_inference.py    # Claude API inference
+│   └── run_openai_inference.py    # OpenAI API inference
 ├── data/
-│   ├── puzzles/                # 58 NYT Spelling Bee puzzles with human difficulty
-│   ├── qwen-results/           # Qwen3 results (4K/8K/16K token budgets)
-│   ├── claude-results/         # Claude Haiku results
-│   └── openai-results/         # GPT-5 results
-├── requirements.txt            # Analysis dependencies
-└── requirements-inference.txt  # Inference dependencies (GPU, API clients)
+│   ├── puzzles/                   # 58 puzzles with human difficulty data
+│   ├── qwen-results/              # Qwen3 results by budget (4K/8K/16K)
+│   ├── claude-results/            # Claude Haiku results (6 configs)
+│   └── openai-results/            # GPT-5-mini results (3 configs)
+├── metrics/                       # Metrics computation package
+│   ├── *.py                       #   Python modules
+│   └── output/                    #   Computed metrics (CSV, JSON, TEX)
+├── compute_metrics.py             # Compute all metrics from results
+├── generate_figures.py            # Generate publication figures
+├── analyze_tokenization.py        # Tokenization robustness analysis
+├── validate_false_positives.py    # False positive validation
+├── prompt_visualization.tex       # LaTeX prompt visualization
+├── requirements.txt               # Analysis dependencies
+├── requirements-inference.txt     # Inference dependencies (GPU, API clients)
+├── LICENSE-CODE                   # MIT License (code + model results)
+└── LICENSE-DATA                   # Fair use notice (puzzle data)
 ```
 
 ## Setup
@@ -31,33 +41,53 @@ This repository provides data and code to reproduce the experiments in our paper
 # Clone and install analysis dependencies
 pip install -r requirements.txt
 
-# For running inference 
+# For running inference (GPU or API keys required)
 pip install -r requirements-inference.txt
 ```
 
 ## Reproduction
 
-All commands run from the repository root.
+### Inference
 
-**Qwen models (requires GPU with vLLM):**
+**Qwen3 models on Google Colab (recommended):**
+Copy the contents of `src/colab_spelling_bee.py` into a Colab notebook cell with a GPU runtime (A100 recommended). Mount Google Drive and update the paths at the top of the cell. The script runs all five Qwen3 model sizes (4B, 8B, 14B, 30B, 32B) in both thinking and non-thinking modes.
+
+**Qwen3 models locally (requires NVIDIA GPU with vLLM):**
+
 ```bash
-python src/run_inference.py
+pip install -r requirements-inference.txt
+python src/colab_spelling_bee.py  # Update paths at the top for your environment
 ```
 
 **Claude Haiku (requires API key):**
+
 ```bash
 export ANTHROPIC_API_KEY='your_key'
 python src/run_claude_inference.py
 ```
 
-**GPT-5 (requires API key):**
+**GPT-5-mini (requires API key):**
+
 ```bash
 export OPENAI_API_KEY='your_key'
 python src/run_openai_inference.py
 ```
 
-**Qwen on Google Colab:**
-Upload `src/colab_spelling_bee.py` to Colab and update the Google Drive paths at the top of the file.
+### Analysis
+
+```bash
+# Compute all metrics from result files
+python compute_metrics.py --results-dir data/qwen-results --output-dir metrics/output
+
+# Generate publication figures
+python generate_figures.py --metrics-dir metrics/output --output-dir figures
+
+# Tokenization robustness check (requires transformers from requirements-inference.txt)
+python analyze_tokenization.py
+
+# Validate false positives against dictionaries (requires nltk)
+python validate_false_positives.py
+```
 
 ## Data
 
@@ -68,21 +98,74 @@ from datasets import load_dataset
 ds = load_dataset("redasers/spelling-bee-human-difficulty")
 ```
 
-- **Puzzles** (`data/puzzles/`): 58 NYT Spelling Bee puzzles (June 2 -- July 29, 2025). Each JSON contains valid answers and per-word human solve counts from a sample of 10,000 users.
-- **Results** (`data/qwen-results/`, `data/claude-results/`, `data/openai-results/`): Model predictions for all configurations. Qwen results are organized by thinking budget (4K/8K/16K tokens).
+### Puzzles
+
+`data/puzzles/` contains 58 NYT Spelling Bee puzzles from June 2 to July 29, 2025. Each JSON file maps valid answers to their human solve count from a sample of ~10,000 users:
+
+```json
+{
+    "id": 15134,
+    "answers": {
+        "cello": 7858,
+        "compile": 7892,
+        "lollop": 4874
+    }
+}
+```
+
+Higher counts indicate easier words (more solvers). Lower counts indicate harder words.
+
+### Model Results
+
+Each result file is a JSON object with the following schema:
+
+```json
+{
+    "metadata": {
+        "model_name": "qwen3_8b",
+        "model_family": "qwen3",
+        "model_size": "8B",
+        "thinking_enabled": true,
+        "thinking_budget": 4096
+    },
+    "predictions": [
+        {
+            "puzzle_id": 15134,
+            "date": "20250602",
+            "center_letter": "o",
+            "all_letters": ["c", "e", "i", "l", "m", "o", "p"],
+            "predicted_words": ["cello", "compile", "police"],
+            "actual_words": ["cello", "compile", "lollop"],
+            "correctly_predicted": ["cello", "compile"],
+            "missed_words": ["lollop"],
+            "false_positives": ["police"]
+        }
+    ]
+}
+```
+
+Metadata fields vary by model family:
+- **Qwen3**: `thinking_budget` (4096, 8192, or 16384 tokens)
+- **Claude Haiku**: `thinking_budget` (same range)
+- **GPT-5-mini**: `reasoning_effort` ("low", "medium", or "high") instead of `thinking_budget`
+
+Result directories:
+- `data/qwen-results/{4,8,16}/` -- Qwen3 predictions at 4K/8K/16K thinking token budgets. Each budget directory contains 10 files (5 model sizes x 2 thinking modes).
+- `data/claude-results/` -- Claude Haiku-4.5 predictions (3 thinking + 3 non-thinking configs).
+- `data/openai-results/` -- GPT-5-mini predictions (3 reasoning effort levels: low/medium/high).
 
 ## Key Findings
 
-1. Architectural differences produce 2.0--2.2x performance gaps (F1=0.761 vs 0.343), larger than eightfold parameter scaling (83% gain)
+1. Architectural differences produce 2.0--2.2x performance gaps (F1 = 0.761 vs. 0.343), larger than eightfold parameter scaling (83% gain)
 2. Thinking mode consistently improves performance (+0.179 F1)
 3. Budget sensitivity is heterogeneous: high-capacity models gain +0.10--0.14 F1, mid-sized variants saturate or degrade
-4. Modest but consistent human calibration (r=0.24--0.38) with systematic failures on orthographically atypical common words
+4. Modest but consistent human calibration (r = 0.24--0.38) with systematic failures on orthographically atypical common words
 
 ## License
 
-- **Code** (`src/`): MIT License. See [LICENSE-CODE](LICENSE-CODE).
-- **Puzzle data** (`data/puzzles/`): Originates from The New York Times Spelling Bee. Redistributed for non-commercial academic research under fair use. See [LICENSE-DATA](LICENSE-DATA).
+- **Code** (`src/`, `metrics/`, `compute_metrics.py`, `generate_figures.py`): MIT License. See [LICENSE-CODE](LICENSE-CODE).
 - **Model results** (`data/qwen-results/`, `data/claude-results/`, `data/openai-results/`): MIT License.
+- **Puzzle data** (`data/puzzles/`): Originates from The New York Times Spelling Bee. Redistributed for non-commercial academic research under fair use. See [LICENSE-DATA](LICENSE-DATA).
 
 ## Citation
 

@@ -43,9 +43,9 @@ OPENAI_NON_REASONING_MODEL = "gpt-4.1"
 REASONING_EFFORT = "low"
 
 ABLATION_CONFIGS = [
-    # ("low", 16384),
-    # ("medium", 16384),
-    ("high", 32768)  # 16384 + 4096 buffer for exhausted thinking budget
+    ("low", 4096),
+    ("medium", 8192),
+    ("high", 16384),
 ]
 NON_REASONING_ABLATION_CONFIGS = []
 

@@ -14,6 +14,6 @@ This dataset is provided under fair use (17 U.S.C. § 107) for purposes of
 scholarly research and commentary. It may not be used for commercial purposes
 or to replicate The New York Times Spelling Bee product.
 
-The model outputs in data/results/, data/claude-results/, and
+The model outputs in data/qwen-results/, data/claude-results/, and
 data/openai-results/ are original experimental results produced by the authors
 and are released under the MIT license (see LICENSE-CODE).

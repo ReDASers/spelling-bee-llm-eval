@@ -1,0 +1,65 @@
+{
+  "unique_words": 2007,
+  "single_token_pct": 21.37518684603886,
+  "token_distribution": {
+    "1": 429,
+    "2": 1281,
+    "3": 286,
+    "4": 11
+  },
+  "char_token_correlation": {
+    "r": 0.466,
+    "p": 1.01e-108
+  },
+  "recall_by_char_length": {
+    "4": 0.275,
+    "5": 0.21,
+    "6": 0.12,
+    "7": 0.087,
+    "8": 0.056,
+    "9": 0.048,
+    "10": 0.034,
+    "11": 0.031,
+    "12": 0.013,
+    "13": 0.026
+  },
+  "recall_by_token_count": {
+    "1": 0.25,
+    "2": 0.179,
+    "3": 0.072,
+    "4": 0.056
+  },
+  "methodology_note": "Updated: word-level aggregation (one obs per word, no pseudoreplication), partial correlations controlling for confounds",
+  "word_level_correlations": {
+    "raw": {
+      "char_length": {
+        "r": -0.526,
+        "p": 3.09e-143
+      },
+      "token_count": {
+        "r": -0.328,
+        "p": 1.21e-51
+      }
+    },
+    "partial": {
+      "token_count_given_char_length": {
+        "r": -0.11,
+        "p": 6.91e-07
+      },
+      "char_length_given_token_count": {
+        "r": -0.446,
+        "p": 7.21e-99
+      }
+    }
+  },
+  "qwen_only_partial": {
+    "token_count_given_char_length": {
+      "r": -0.004,
+      "p": 0.845
+    },
+    "char_length_given_token_count": {
+      "r": -0.399,
+      "p": 1.36e-77
+    }
+  }
+}
