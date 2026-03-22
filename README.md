@@ -3,7 +3,7 @@
 **Bryan E. Tuck and Rakesh M. Verma**
 University of Houston
 
-Accepted at LREC-COLING 2026. [[arXiv]](https://arxiv.org/abs/2511.21086)
+Accepted at LREC 2026. [[arXiv]](https://arxiv.org/abs/2511.21086)
 
 ## Overview
 
