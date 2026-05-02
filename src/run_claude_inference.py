@@ -15,8 +15,8 @@ import traceback
 
 # --- Configuration ---
 
-BEE_DATA_PATH = "./Bee-Daily-Pull/"
-RESULTS_PATH = "./claude-results/"
+BEE_DATA_PATH = "./data/puzzles/"
+RESULTS_PATH = "./data/claude-results/"
 LOG_PATH = "./claude-logs/"
 
 START_DATE = "20250602"

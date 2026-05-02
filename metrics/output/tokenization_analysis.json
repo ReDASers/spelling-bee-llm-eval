@@ -29,7 +29,6 @@
     "3": 0.072,
     "4": 0.056
   },
-  "methodology_note": "Updated: word-level aggregation (one obs per word, no pseudoreplication), partial correlations controlling for confounds",
   "word_level_correlations": {
     "raw": {
       "char_length": {

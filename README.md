@@ -74,6 +74,8 @@ python src/run_openai_inference.py
 
 ### Analysis
 
+Run from the repository root, in order. `analyze_tokenization.py` and `validate_false_positives.py` read intermediate outputs from `metrics/output/`.
+
 ```bash
 # Compute all metrics from result files
 python compute_metrics.py --results-dir data/qwen-results --output-dir metrics/output

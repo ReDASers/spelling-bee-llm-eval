@@ -11,6 +11,7 @@ writing-guide.pdf
 # === Paper source (not public) ===
 paper/
 prompt_visualization.tex
+COLM_2026_working_doc.md
 
 # === Python ===
 __pycache__/

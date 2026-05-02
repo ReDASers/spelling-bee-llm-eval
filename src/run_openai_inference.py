@@ -18,8 +18,8 @@ if sys.platform == 'win32':
 
 # --- Configuration ---
 
-BEE_DATA_PATH = "./Bee-Daily-Pull/"
-RESULTS_PATH = "./openai-results/"
+BEE_DATA_PATH = "./data/puzzles/"
+RESULTS_PATH = "./data/openai-results/"
 LOG_PATH = "./openai-logs/"
 
 START_DATE = "20250602"
