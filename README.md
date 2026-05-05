@@ -7,7 +7,7 @@ Accepted at LREC 2026. [[arXiv]](https://arxiv.org/abs/2511.21086)
 
 ## Overview
 
-This repository provides data and code to reproduce the experiments in our paper evaluating LLM orthographic constraint satisfaction using the NYT Spelling Bee task. We test 28 configurations spanning three model families (Qwen3 4B--32B, Claude Haiku-4.5, GPT-5-mini) on 58 word puzzles, with human difficulty ground truth from 10,000+ NYT users per puzzle.
+This repository provides data and code to reproduce the experiments in our paper evaluating LLM orthographic constraint satisfaction using the NYT Spelling Bee task. We test 39 configurations spanning three model families (Qwen3 4B--32B, Claude Haiku-4.5, GPT-5-mini) on 58 word puzzles, with human difficulty ground truth from 10,000+ NYT users per puzzle.
 
 ## Repository Structure
 
